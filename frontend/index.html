@@ -3,46 +3,63 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Emotional Support Platform</title>
+    <title>HearU — Emotional Support</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <header>
-      <h1>Your Safe Space for Emotional Support</h1>
-      <p>Connect with a human support giver or talk privately with AI.</p>
-    </header>
+    <div class="app-shell">
+      <header class="hero">
+        <div class="brand-row">
+          <span class="logo-pill">💜 HearU</span>
+          <span class="status-pill" id="authState">Not logged in</span>
+        </div>
+        <h1>A safe space to be heard.</h1>
+        <p>Choose human support or private AI support — whenever you need it.</p>
+      </header>
 
-    <main>
-      <section class="card">
-        <h2>1) Register</h2>
-        <input id="email" placeholder="Email" />
-        <input id="password" type="password" placeholder="Password" />
-        <input id="displayName" placeholder="Display Name" />
-        <select id="role">
-          <option value="support_seeker">I Need Support</option>
-          <option value="support_giver">I Want to Offer Support</option>
-        </select>
-        <button id="registerBtn">Create Account</button>
-      </section>
+      <main class="grid">
+        <section class="card">
+          <h2>Create account</h2>
+          <p class="muted">Start as a seeker or a support giver.</p>
+          <input id="email" placeholder="Email" />
+          <input id="password" type="password" placeholder="Password" />
+          <input id="displayName" placeholder="Display Name" />
+          <select id="role">
+            <option value="support_seeker">I Need Support</option>
+            <option value="support_giver">I Want to Offer Support</option>
+          </select>
+          <button id="registerBtn">Create HearU Account</button>
+        </section>
 
-      <section class="card">
-        <h2>2) Login</h2>
-        <input id="loginEmail" placeholder="Email" />
-        <input id="loginPassword" type="password" placeholder="Password" />
-        <button id="loginBtn">Login</button>
-      </section>
+        <section class="card">
+          <h2>Login</h2>
+          <p class="muted">Continue your journey.</p>
+          <input id="loginEmail" placeholder="Email" />
+          <input id="loginPassword" type="password" placeholder="Password" />
+          <button id="loginBtn">Login</button>
+          <p id="flashMessage" class="flash"></p>
+        </section>
 
-      <section class="card">
-        <h2>3) Dashboard</h2>
-        <button id="requestHumanBtn">Connect with Support Giver</button>
-        <button id="requestAiBtn">Talk to AI Bot</button>
-        <p id="sessionResult"></p>
+        <section class="card card-wide">
+          <h2>Support dashboard</h2>
+          <p class="muted">Pick a support mode and start talking.</p>
 
-        <input id="chatInput" placeholder="Type message for AI session" />
-        <button id="sendAiMessageBtn">Send to AI</button>
-        <pre id="chatOutput"></pre>
-      </section>
-    </main>
+          <div class="actions">
+            <button id="requestHumanBtn" class="btn-secondary">Connect with Support Giver</button>
+            <button id="requestAiBtn">Talk to HearU AI</button>
+          </div>
+
+          <p id="sessionResult" class="session"></p>
+
+          <div class="chat-box">
+            <label for="chatInput">Message HearU AI</label>
+            <input id="chatInput" placeholder="Type what's on your mind..." />
+            <button id="sendAiMessageBtn">Send message</button>
+            <pre id="chatOutput">No conversation yet.</pre>
+          </div>
+        </section>
+      </main>
+    </div>
 
     <script src="script.js"></script>
   </body>

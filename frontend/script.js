@@ -3,6 +3,16 @@ let token = null;
 let activeSessionId = null;
 let activeIsAi = false;
 
+function setFlash(message, isError = false) {
+  const el = document.getElementById("flashMessage");
+  el.textContent = message;
+  el.style.color = isError ? "#b91c1c" : "#4338ca";
+}
+
+function setAuthState(message) {
+  document.getElementById("authState").textContent = message;
+}
+
 async function api(path, method = "GET", body = null) {
   const headers = { "Content-Type": "application/json" };
   if (token) headers.Authorization = `Bearer ${token}`;
@@ -22,6 +32,9 @@ async function api(path, method = "GET", body = null) {
 
 function appendChat(line) {
   const el = document.getElementById("chatOutput");
+  if (el.textContent.trim() === "No conversation yet.") {
+    el.textContent = "";
+  }
   el.textContent += `${line}\n`;
 }
 
@@ -35,9 +48,10 @@ document.getElementById("registerBtn").onclick = async () => {
       is_anonymous: true,
     });
     token = data.access_token;
-    alert("Registered successfully");
+    setFlash("Welcome to HearU! Account created.");
+    setAuthState("Authenticated");
   } catch (err) {
-    alert(`Register failed: ${err.message}`);
+    setFlash(`Register failed: ${err.message}`, true);
   }
 };
 
@@ -48,9 +62,10 @@ document.getElementById("loginBtn").onclick = async () => {
       password: document.getElementById("loginPassword").value,
     });
     token = data.access_token;
-    alert("Login successful");
+    setFlash("Login successful.");
+    setAuthState("Authenticated");
   } catch (err) {
-    alert(`Login failed: ${err.message}`);
+    setFlash(`Login failed: ${err.message}`, true);
   }
 };
 
@@ -60,8 +75,9 @@ document.getElementById("requestHumanBtn").onclick = async () => {
     activeSessionId = data.session_id;
     activeIsAi = false;
     document.getElementById("sessionResult").innerText = `Human session #${data.session_id} (${data.status})`;
+    setFlash("Connected to support flow.");
   } catch (err) {
-    alert(`Could not request human session: ${err.message}`);
+    setFlash(`Could not request human session: ${err.message}`, true);
   }
 };
 
@@ -70,25 +86,32 @@ document.getElementById("requestAiBtn").onclick = async () => {
     const data = await api("/sessions/request-ai", "POST", { cause: "Stress" });
     activeSessionId = data.session_id;
     activeIsAi = true;
-    document.getElementById("sessionResult").innerText = `AI session #${data.session_id} (${data.status})`;
-    document.getElementById("chatOutput").textContent = "";
+    document.getElementById("sessionResult").innerText = `HearU AI session #${data.session_id} (${data.status})`;
+    document.getElementById("chatOutput").textContent = "No conversation yet.";
+    setFlash("HearU AI is ready for you.");
   } catch (err) {
-    alert(`Could not request AI session: ${err.message}`);
+    setFlash(`Could not request AI session: ${err.message}`, true);
   }
 };
 
 document.getElementById("sendAiMessageBtn").onclick = async () => {
   try {
     if (!activeSessionId || !activeIsAi) {
-      alert("Start an AI session first.");
+      setFlash("Start a HearU AI session first.", true);
       return;
     }
-    const content = document.getElementById("chatInput").value;
+    const content = document.getElementById("chatInput").value.trim();
+    if (!content) {
+      setFlash("Please type a message.", true);
+      return;
+    }
+
     appendChat(`You: ${content}`);
     const data = await api(`/sessions/${activeSessionId}/ai-message`, "POST", { content });
-    appendChat(`AI: ${data.reply}`);
+    appendChat(`HearU AI: ${data.reply}`);
     document.getElementById("chatInput").value = "";
+    setFlash("Message delivered.");
   } catch (err) {
-    alert(`Could not send AI message: ${err.message}`);
+    setFlash(`Could not send AI message: ${err.message}`, true);
   }
 };

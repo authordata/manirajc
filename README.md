@@ -1,6 +1,6 @@
-# Dataman - Emotional Support Platform App
+# HearU - Emotional Support Platform App
 
-This is a runnable starter app for an emotional support platform connecting:
+This is a runnable starter app for HearU, an emotional support platform connecting:
 
 - Support seekers (with anonymity options)
 - Support givers (volunteer profiles + availability)
