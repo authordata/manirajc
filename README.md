@@ -33,6 +33,14 @@ python -m http.server 5173 --directory frontend
 
 Open: `http://localhost:5173`
 
+
+### Frontend pages
+
+- `index.html` — Home + auth + dashboard
+- `chat.html` — Dedicated chat experience
+- `settings.html` — Privacy, notifications, safety actions
+- `profile.html` — Profile and session history
+
 ### 3) Run automated backend tests
 
 ```bash

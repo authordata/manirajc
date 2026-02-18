@@ -3,14 +3,21 @@ let token = null;
 let activeSessionId = null;
 let activeIsAi = false;
 
+function getEl(id) {
+  return document.getElementById(id);
+}
+
 function setFlash(message, isError = false) {
-  const el = document.getElementById("flashMessage");
+  const el = getEl("flashMessage");
+  if (!el) return;
   el.textContent = message;
   el.style.color = isError ? "#b91c1c" : "#4338ca";
 }
 
 function setAuthState(message) {
-  document.getElementById("authState").textContent = message;
+  const el = getEl("authState");
+  if (!el) return;
+  el.textContent = message;
 }
 
 async function api(path, method = "GET", body = null) {
@@ -31,20 +38,28 @@ async function api(path, method = "GET", body = null) {
 }
 
 function appendChat(line) {
-  const el = document.getElementById("chatOutput");
+  const el = getEl("chatOutput");
+  if (!el) return;
   if (el.textContent.trim() === "No conversation yet.") {
     el.textContent = "";
   }
   el.textContent += `${line}\n`;
 }
 
-document.getElementById("registerBtn").onclick = async () => {
+function bindClick(id, handler) {
+  const el = getEl(id);
+  if (el) {
+    el.onclick = handler;
+  }
+}
+
+bindClick("registerBtn", async () => {
   try {
     const data = await api("/auth/register", "POST", {
-      email: document.getElementById("email").value,
-      password: document.getElementById("password").value,
-      display_name: document.getElementById("displayName").value,
-      role: document.getElementById("role").value,
+      email: getEl("email")?.value,
+      password: getEl("password")?.value,
+      display_name: getEl("displayName")?.value,
+      role: getEl("role")?.value,
       is_anonymous: true,
     });
     token = data.access_token;
@@ -53,13 +68,13 @@ document.getElementById("registerBtn").onclick = async () => {
   } catch (err) {
     setFlash(`Register failed: ${err.message}`, true);
   }
-};
+});
 
-document.getElementById("loginBtn").onclick = async () => {
+bindClick("loginBtn", async () => {
   try {
     const data = await api("/auth/login", "POST", {
-      email: document.getElementById("loginEmail").value,
-      password: document.getElementById("loginPassword").value,
+      email: getEl("loginEmail")?.value,
+      password: getEl("loginPassword")?.value,
     });
     token = data.access_token;
     setFlash("Login successful.");
@@ -67,40 +82,49 @@ document.getElementById("loginBtn").onclick = async () => {
   } catch (err) {
     setFlash(`Login failed: ${err.message}`, true);
   }
-};
+});
 
-document.getElementById("requestHumanBtn").onclick = async () => {
+bindClick("requestHumanBtn", async () => {
   try {
     const data = await api("/sessions/request", "POST", { cause: "Loneliness" });
     activeSessionId = data.session_id;
     activeIsAi = false;
-    document.getElementById("sessionResult").innerText = `Human session #${data.session_id} (${data.status})`;
+    const session = getEl("sessionResult");
+    if (session) {
+      session.innerText = `Human session #${data.session_id} (${data.status})`;
+    }
     setFlash("Connected to support flow.");
   } catch (err) {
     setFlash(`Could not request human session: ${err.message}`, true);
   }
-};
+});
 
-document.getElementById("requestAiBtn").onclick = async () => {
+bindClick("requestAiBtn", async () => {
   try {
     const data = await api("/sessions/request-ai", "POST", { cause: "Stress" });
     activeSessionId = data.session_id;
     activeIsAi = true;
-    document.getElementById("sessionResult").innerText = `HearU AI session #${data.session_id} (${data.status})`;
-    document.getElementById("chatOutput").textContent = "No conversation yet.";
+    const session = getEl("sessionResult");
+    if (session) {
+      session.innerText = `HearU AI session #${data.session_id} (${data.status})`;
+    }
+    const chat = getEl("chatOutput");
+    if (chat) {
+      chat.textContent = "No conversation yet.";
+    }
     setFlash("HearU AI is ready for you.");
   } catch (err) {
     setFlash(`Could not request AI session: ${err.message}`, true);
   }
-};
+});
 
-document.getElementById("sendAiMessageBtn").onclick = async () => {
+bindClick("sendAiMessageBtn", async () => {
   try {
     if (!activeSessionId || !activeIsAi) {
       setFlash("Start a HearU AI session first.", true);
       return;
     }
-    const content = document.getElementById("chatInput").value.trim();
+    const content = getEl("chatInput")?.value?.trim();
     if (!content) {
       setFlash("Please type a message.", true);
       return;
@@ -109,9 +133,12 @@ document.getElementById("sendAiMessageBtn").onclick = async () => {
     appendChat(`You: ${content}`);
     const data = await api(`/sessions/${activeSessionId}/ai-message`, "POST", { content });
     appendChat(`HearU AI: ${data.reply}`);
-    document.getElementById("chatInput").value = "";
+    const input = getEl("chatInput");
+    if (input) {
+      input.value = "";
+    }
     setFlash("Message delivered.");
   } catch (err) {
     setFlash(`Could not send AI message: ${err.message}`, true);
   }
-};
+});

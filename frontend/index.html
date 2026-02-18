@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>HearU — Emotional Support</title>
+    <title>HearU — Home</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -16,6 +16,13 @@
         <h1>A safe space to be heard.</h1>
         <p>Choose human support or private AI support — whenever you need it.</p>
       </header>
+
+      <nav class="top-nav">
+        <a class="active" href="index.html">Home</a>
+        <a href="chat.html">Chat</a>
+        <a href="settings.html">Settings</a>
+        <a href="profile.html">Profile</a>
+      </nav>
 
       <main class="grid">
         <section class="card">
@@ -50,13 +57,7 @@
           </div>
 
           <p id="sessionResult" class="session"></p>
-
-          <div class="chat-box">
-            <label for="chatInput">Message HearU AI</label>
-            <input id="chatInput" placeholder="Type what's on your mind..." />
-            <button id="sendAiMessageBtn">Send message</button>
-            <pre id="chatOutput">No conversation yet.</pre>
-          </div>
+          <a class="inline-link" href="chat.html">Open full chat page →</a>
         </section>
       </main>
     </div>
