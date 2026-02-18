@@ -1,0 +1,81 @@
+from datetime import datetime
+from enum import Enum
+from typing import Optional
+
+from sqlmodel import Field, SQLModel
+
+
+class Role(str, Enum):
+    SUPPORT_SEEKER = "support_seeker"
+    SUPPORT_GIVER = "support_giver"
+
+
+class SessionStatus(str, Enum):
+    OPEN = "open"
+    ACTIVE = "active"
+    CLOSED = "closed"
+
+
+class User(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    email: str = Field(index=True, unique=True)
+    password_hash: str
+    role: Role
+    display_name: str
+    is_anonymous: bool = True
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class SeekerProfile(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(index=True, unique=True)
+    gender: Optional[str] = None
+    age_range: Optional[str] = None
+    causes_csv: Optional[str] = None
+    visibility: str = "private"
+
+
+class GiverProfile(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(index=True, unique=True)
+    about: Optional[str] = None
+    experience: Optional[str] = None
+    is_available: bool = True
+
+
+class ChatSession(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    seeker_id: int = Field(index=True)
+    giver_id: Optional[int] = Field(default=None, index=True)
+    is_ai_session: bool = False
+    status: SessionStatus = SessionStatus.OPEN
+    cause: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    ended_at: Optional[datetime] = None
+
+
+class ChatMessage(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    session_id: int = Field(index=True)
+    sender_user_id: Optional[int] = Field(default=None, index=True)
+    sender_label: str
+    content: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class Feedback(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    session_id: int = Field(index=True)
+    submitted_by_user_id: int = Field(index=True)
+    rating: int
+    comment: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class Report(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    session_id: Optional[int] = Field(default=None, index=True)
+    reported_by_user_id: int = Field(index=True)
+    reason: str
+    details: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)

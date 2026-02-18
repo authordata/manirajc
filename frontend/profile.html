@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HearU — Profile</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="hero compact">
+        <div class="brand-row">
+          <span class="logo-pill">💜 HearU</span>
+          <span class="status-pill">Profile</span>
+        </div>
+        <h1>Your profile & history</h1>
+      </header>
+
+      <nav class="top-nav">
+        <a href="index.html">Home</a>
+        <a href="chat.html">Chat</a>
+        <a href="settings.html">Settings</a>
+        <a class="active" href="profile.html">Profile</a>
+      </nav>
+
+      <main class="grid">
+        <section class="card">
+          <h2>Profile</h2>
+          <input placeholder="Display name" value="Anonymous Listener" />
+          <select>
+            <option>Support seeker</option>
+            <option>Support giver</option>
+          </select>
+          <select>
+            <option>Prefer not to say</option>
+            <option>Male</option>
+            <option>Female</option>
+            <option>Non-Binary</option>
+          </select>
+          <button>Save profile</button>
+        </section>
+
+        <section class="card">
+          <h2>Emotional support focus</h2>
+          <label class="tag">Loneliness</label>
+          <label class="tag">Stress</label>
+          <label class="tag">Anxiety</label>
+          <label class="tag">Relationship</label>
+        </section>
+
+        <section class="card card-wide">
+          <h2>Recent sessions</h2>
+          <div class="history-item">
+            <div>
+              <strong>HearU AI</strong>
+              <p class="muted">Grounding session — 12 min</p>
+            </div>
+            <span class="badge">Rated 5/5</span>
+          </div>
+          <div class="history-item">
+            <div>
+              <strong>Support giver (anonymous)</strong>
+              <p class="muted">Talked about stress — 24 min</p>
+            </div>
+            <span class="badge">Rated 4/5</span>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
