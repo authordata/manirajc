@@ -1,6 +1,15 @@
 # HearU Android App (Native Kotlin)
 
-This directory now contains a multi-screen Android app starter for HearU:
+You can now **open this `android/` folder directly in Android Studio**.
+
+## What is included (ready-to-import)
+- Android project config files:
+  - `settings.gradle.kts`
+  - `build.gradle.kts`
+  - `gradle.properties`
+  - `app/build.gradle.kts`
+  - `app/proguard-rules.pro`
+- App manifest + resources + Kotlin activities.
 
 ## Implemented app screens
 - `OnboardingActivity` (welcome + get started)
@@ -9,22 +18,25 @@ This directory now contains a multi-screen Android app starter for HearU:
 - `SettingsActivity` (privacy and notifications)
 - `ProfileActivity` (profile update + session context)
 
+## Quick start in Android Studio
+1. Open Android Studio.
+2. Click **Open** and select the `android/` directory.
+3. Let Gradle sync finish.
+4. Run app on emulator/device.
+
+If sync asks for JDK, use **JDK 17**.
+
 ## Key source files
 - `app/src/main/AndroidManifest.xml`
 - `app/src/main/java/com/dataman/support/ui/*.kt`
 - `app/src/main/res/layout/*.xml`
 - `app/src/main/java/com/dataman/support/ApiContracts.kt`
 
-## Next build steps (Android Studio)
-1. Create/attach Gradle project files (`build.gradle`, `settings.gradle`, wrapper) if not already present.
-2. Add dependencies:
-   - `androidx.appcompat`
-   - `material`
-   - `retrofit2`, `okhttp`
-   - `kotlinx-serialization` or `moshi`
-3. Set `minSdk` (e.g., 24+) and `targetSdk` (latest stable).
-4. Wire API calls in activities/viewmodels using `ApiContracts.kt` models.
-5. Add secure token storage (`EncryptedSharedPreferences`).
+## Next build steps
+1. Wire API calls in activities/viewmodels using `ApiContracts.kt`.
+2. Add secure token storage (`EncryptedSharedPreferences`).
+3. Move UI state into MVVM (`ViewModel` + repository).
+4. Replace placeholder chat response with backend/LLM response.
 
 ---
 
@@ -48,7 +60,7 @@ This directory now contains a multi-screen Android app starter for HearU:
 ### 3) Signing & build
 - Generate release keystore.
 - Build signed Android App Bundle (`.aab`) in Android Studio.
-- Use Play App Signing (recommended by Google).
+- Use Play App Signing.
 
 ### 4) Policy compliance (critical for this domain)
 - Privacy policy with data handling specifics.

@@ -58,4 +58,5 @@ pytest -q
 - Settings
 - Profile
 
-See `android/README.md` for Play Store steps.
+See `android/README.md` for Play Store steps and Android Studio import instructions.
+Open `android/` directly in Android Studio.
