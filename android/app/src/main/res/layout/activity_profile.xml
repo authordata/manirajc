@@ -6,30 +6,35 @@
     android:padding="16dp">
 
     <TextView
-        android:id="@+id/titleText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Emotional Support Dashboard"
+        android:text="Profile"
         android:textSize="22sp"
-        android:paddingBottom="12dp" />
+        android:textStyle="bold" />
 
-    <Button
-        android:id="@+id/humanSupportBtn"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Connect with Support Giver" />
-
-    <Button
-        android:id="@+id/aiSupportBtn"
+    <EditText
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
-        android:text="Talk to AI Bot" />
+        android:hint="Display name"
+        android:text="Anonymous Listener" />
 
-    <TextView
-        android:id="@+id/statusText"
+    <Spinner
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <Button
+        android:id="@+id/saveProfileButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="Ready" />
+        android:layout_marginTop="12dp"
+        android:text="Save profile" />
+
+    <TextView
+        android:id="@+id/saveStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="" />
+
+    <include layout="@layout/nav_bottom" />
 </LinearLayout>

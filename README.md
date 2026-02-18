@@ -48,3 +48,14 @@ cd backend
 source .venv/bin/activate
 pytest -q
 ```
+
+
+### Android app screens (native starter)
+
+- Onboarding
+- Auth (login/sign-up)
+- Chat
+- Settings
+- Profile
+
+See `android/README.md` for Play Store steps.
