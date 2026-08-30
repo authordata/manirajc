@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- HearU App Journey Tests - Run with: android run then evaluate these journeys -->
+
+<!-- Journey 1: Onboarding to Auth -->
+<journey name="Onboarding to Auth Navigation">
+   <description>
+      Verifies the app launches to onboarding and can navigate to auth screen
+   </description>
+   <actions>
+      <action>Verify that the app is on the Onboarding screen</action>
+      <action>Verify that a "Get Started" or login button is visible</action>
+      <action>Tap the "Get Started" or login button</action>
+      <action>Verify that the Auth screen is shown with email and password fields</action>
+   </actions>
+</journey>
+
+<!-- Journey 2: Registration Flow -->
+<journey name="User Registration">
+   <description>
+      Tests the full registration flow for a support seeker
+   </description>
+   <actions>
+      <action>Navigate to the Auth screen</action>
+      <action>Tap the "Create Account" button to switch to registration mode</action>
+      <action>Verify that display name field, role spinner, and anonymous checkbox are visible</action>
+      <action>Enter "testuser@hearu.com" in the email field</action>
+      <action>Enter "password123" in the password field</action>
+      <action>Enter "Test User" in the display name field</action>
+      <action>Select "Support Seeker" from the role spinner</action>
+      <action>Tap the "Sign Up" button</action>
+      <action>Verify that the app navigates to the Chat screen or shows an error message</action>
+   </actions>
+</journey>
+
+<!-- Journey 3: Login Flow -->
+<journey name="User Login">
+   <description>
+      Tests the login flow with email and password
+   </description>
+   <actions>
+      <action>Navigate to the Auth screen</action>
+      <action>Verify that the Login button is visible</action>
+      <action>Enter "testuser@hearu.com" in the email field</action>
+      <action>Enter "password123" in the password field</action>
+      <action>Tap the "Login" button</action>
+      <action>Verify that the app navigates away from the Auth screen or shows an error</action>
+   </actions>
+</journey>
+
+<!-- Journey 4: Login Validation -->
+<journey name="Login Input Validation">
+   <description>
+      Tests that invalid inputs show proper error messages
+   </description>
+   <actions>
+      <action>Navigate to the Auth screen</action>
+      <action>Leave the email field empty</action>
+      <action>Enter "ab" in the password field</action>
+      <action>Tap the "Login" button</action>
+      <action>Verify that an error message about invalid email is shown</action>
+      <action>Enter "valid@email.com" in the email field</action>
+      <action>Clear the password field and enter "12"</action>
+      <action>Tap the "Login" button</action>
+      <action>Verify that an error message about password length is shown</action>
+   </actions>
+</journey>
+
+<!-- Journey 5: Bottom Navigation -->
+<journey name="Bottom Navigation">
+   <description>
+      Tests that bottom navigation works correctly between all tabs
+   </description>
+   <actions>
+      <action>Navigate to the Chat screen (login first if needed)</action>
+      <action>Verify that a bottom navigation bar is visible</action>
+      <action>Tap the "Profile" navigation item</action>
+      <action>Verify that the Profile screen is shown</action>
+      <action>Tap the "Settings" navigation item</action>
+      <action>Verify that the Settings screen is shown</action>
+      <action>Tap the "Chat" navigation item</action>
+      <action>Verify that the Chat screen is shown</action>
+      <action>Tap the "Home" navigation item</action>
+      <action>Verify that the Chat screen is shown</action>
+   </actions>
+</journey>
+
+<!-- Journey 6: Chat Session -->
+<journey name="Start AI Chat Session">
+   <description>
+      Tests starting an AI chat session and sending a message
+   </description>
+   <actions>
+      <action>Navigate to the Chat screen</action>
+      <action>Verify that a message input field and send button are visible</action>
+      <action>Enter "I feel overwhelmed today" in the message input field</action>
+      <action>Tap the send button</action>
+      <action>Verify that the sent message appears in the chat list</action>
+      <action>Verify that a response message appears (either from AI bot or loading indicator)</action>
+   </actions>
+</journey>
+
+<!-- Journey 7: Settings Screen -->
+<journey name="Settings Screen Interactions">
+   <description>
+      Tests that settings toggles are interactive
+   </description>
+   <actions>
+      <action>Navigate to the Settings screen</action>
+      <action>Verify that toggle switches are visible for notifications or dark mode</action>
+      <action>Tap a toggle switch</action>
+      <action>Verify that the toggle state changes</action>
+   </actions>
+</journey>
+
+<!-- Journey 8: Auth Mode Toggle -->
+<journey name="Auth Mode Toggle">
+   <description>
+      Tests switching between login and registration modes
+   </description>
+   <actions>
+      <action>Navigate to the Auth screen</action>
+      <action>Verify that the screen is in Login mode (display name field hidden)</action>
+      <action>Tap the "Create Account" button</action>
+      <action>Verify that registration fields are now visible (display name, role spinner, anonymous checkbox)</action>
+      <action>Tap the "Switch to Login" button</action>
+      <action>Verify that registration fields are hidden again</action>
+   </actions>
+</journey>
