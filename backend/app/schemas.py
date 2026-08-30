@@ -73,3 +73,22 @@ class ChatMessageRead(BaseModel):
     sender_label: str
     content: str
     created_at: datetime
+    sender_alias: Optional[str] = None
+
+
+class SendOtpRequest(BaseModel):
+    otp_type: str
+
+
+class VerifyOtpRequest(BaseModel):
+    otp_type: str
+    code: str
+
+
+class FriendRequestCreate(BaseModel):
+    receiver_id: int
+    session_id: int
+
+
+class FriendRequestRespond(BaseModel):
+    status: str

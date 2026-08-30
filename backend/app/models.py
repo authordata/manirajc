@@ -24,6 +24,27 @@ class User(SQLModel, table=True):
     display_name: str
     is_anonymous: bool = True
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    phone_number: Optional[str] = None
+    is_phone_verified: bool = False
+    is_email_verified: bool = False
+
+
+class OtpCode(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(index=True)
+    code: str
+    otp_type: str
+    expires_at: datetime
+    is_used: bool = False
+
+
+class FriendRequest(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    sender_id: int = Field(index=True)
+    receiver_id: int = Field(index=True)
+    session_id: int = Field(index=True)
+    status: str = "pending"
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class SeekerProfile(SQLModel, table=True):
