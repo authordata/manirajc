@@ -1,4 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">HearU</string>
+    <!-- Onboarding -->
+    <string name="welcome_title">Welcome to HearU</string>
+    <string name="welcome_subtitle">A safe space for emotional support</string>
+    <string name="feature_descriptions">Connect with empathetic listeners and AI support</string>
+    <string name="get_started">Get Started</string>
+    <string name="disclaimer">By continuing, you agree to our terms.</string>
+    <!-- Auth -->
+    <string name="login">Login</string>
+    <string name="signup">Sign Up</string>
+    <string name="email_hint">Email address</string>
+    <string name="password_hint">Password</string>
+    <string name="display_name_hint">Display Name (Optional)</string>
+    <string name="forgot_password">Forgot Password?</string>
+    <string name="login_error">Login failed. Please try again.</string>
+    <string name="signup_error">Sign up failed. Please try again.</string>
+    <!-- Chat -->
+    <string name="chat_title">Chat</string>
+    <string name="human_support">Human Support</string>
+    <string name="ai_support">AI Support</string>
+    <string name="type_message">Type a message...</string>
+    <string name="send">Send</string>
+    <string name="no_messages">No messages yet.</string>
+    <string name="connecting">Connecting...</string>
+    <string name="ai_ready">AI is ready to listen.</string>
+    <string name="looking_for_giver">Looking for a listener...</string>
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="anonymous_mode">Anonymous Mode</string>
+    <string name="chat_notifications">Chat Notifications</string>
+    <string name="report_issue">Report an Issue</string>
+    <string name="emergency_resources">Emergency Resources</string>
+    <string name="logout">Logout</string>
+    <string name="anonymous_on">On</string>
+    <string name="anonymous_off">Off</string>
+    <!-- Profile -->
+    <string name="profile_title">Profile</string>
+    <string name="save_profile">Save Profile</string>
+    <string name="profile_saved">Profile saved successfully.</string>
+    <string name="display_name">Display Name</string>
+    <!-- Nav -->
+    <string name="nav_home">Home</string>
+    <string name="nav_chat">Chat</string>
+    <string name="nav_settings">Settings</string>
+    <string name="nav_profile">Profile</string>
+    <!-- General -->
+    <string name="loading">Loading...</string>
+    <string name="error_generic">An error occurred.</string>
+    <string name="retry">Retry</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
 </resources>

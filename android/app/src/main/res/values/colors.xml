@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="purple_primary">#6C3FA0</color>
+    <color name="purple_variant">#4C1D95</color>
+    <color name="purple_secondary">#A78BFA</color>
+    <color name="surface">#FAFAFA</color>
+    <color name="background">#FFFFFF</color>
+    <color name="error">#DC2626</color>
+    <color name="on_primary">#FFFFFF</color>
+    <color name="status_bar">#4C1D95</color>
+    <color name="nav_bar">#FFFFFF</color>
+    
+    <color name="chat_user_bubble">#E8E0F0</color>
+    <color name="chat_system_bubble">#F3F0FF</color>
+    <color name="chat_ai_bubble">#FEF3C7</color>
+    
+    <color name="text_primary">#1F2937</color>
+    <color name="text_secondary">#6B7280</color>
+    
+    <color name="success_green">#059669</color>
+    <color name="warning_amber">#D97706</color>
+    
+    <!-- Dark Mode specific colors -->
+    <color name="dark_surface">#1F1B2D</color>
+    <color name="dark_background">#121212</color>
+    <color name="dark_primary">#B794F6</color>
+    <color name="dark_on_surface">#E5E7EB</color>
+    <color name="dark_status_bar">#1F1B2D</color>
+</resources>

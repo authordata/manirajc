@@ -1,25 +1,46 @@
 package com.dataman.support.ui
 
 import android.content.Intent
-import android.widget.TextView
+import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.dataman.support.R
 
-abstract class BaseActivity : AppCompatActivity() {
+open class BaseActivity : AppCompatActivity() {
 
-    protected fun wireBottomNav(active: Int) {
-        val home = findViewById<TextView?>(R.id.navHome)
-        val chat = findViewById<TextView?>(R.id.navChat)
-        val settings = findViewById<TextView?>(R.id.navSettings)
-        val profile = findViewById<TextView?>(R.id.navProfile)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+    }
 
-        home?.setOnClickListener { startActivity(Intent(this, OnboardingActivity::class.java)) }
-        chat?.setOnClickListener { startActivity(Intent(this, ChatActivity::class.java)) }
-        settings?.setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java)) }
-        profile?.setOnClickListener { startActivity(Intent(this, ProfileActivity::class.java)) }
-
-        listOf(home, chat, settings, profile).forEachIndexed { index, textView ->
-            textView?.alpha = if (index == active) 1f else 0.55f
+    protected fun setupBottomNavigation(navView: BottomNavigationView) {
+        navView.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_home -> {
+                    return@setOnItemSelectedListener true
+                }
+                R.id.nav_chat -> {
+                    startActivityWithFlags(Intent(this, ChatActivity::class.java))
+                    return@setOnItemSelectedListener true
+                }
+                R.id.nav_profile -> {
+                    startActivityWithFlags(Intent(this, ProfileActivity::class.java))
+                    return@setOnItemSelectedListener true
+                }
+                R.id.nav_settings -> {
+                    startActivityWithFlags(Intent(this, SettingsActivity::class.java))
+                    return@setOnItemSelectedListener true
+                }
+            }
+            false
         }
+    }
+
+    private fun startActivityWithFlags(intent: Intent) {
+        intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+        startActivity(intent)
+    }
+    
+    protected fun updateNavigationBarState(navView: BottomNavigationView, actionId: Int) {
+        navView.menu.findItem(actionId)?.isChecked = true
     }
 }
