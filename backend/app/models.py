@@ -8,6 +8,9 @@ from sqlmodel import Field, SQLModel
 class Role(str, Enum):
     SUPPORT_SEEKER = "support_seeker"
     SUPPORT_GIVER = "support_giver"
+    # Aliases for convenience
+    SEEKER = "support_seeker"
+    GIVER = "support_giver"
 
 
 class SessionStatus(str, Enum):
@@ -101,6 +104,7 @@ class Report(SQLModel, table=True):
     reason: str
     details: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
 
 class MoodRating(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
