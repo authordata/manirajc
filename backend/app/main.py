@@ -118,6 +118,26 @@ def current_user(
     return user
 
 
+
+@app.get("/")
+def root():
+    return {
+        "app": "HearU",
+        "tagline": "You are not alone",
+        "version": "1.0.0",
+        "status": "running",
+        "docs": "/docs",
+        "health": "/health",
+        "endpoints": {
+            "auth": ["/auth/register", "/auth/login", "/auth/send-otp", "/auth/verify-otp"],
+            "sessions": ["/sessions/request", "/sessions/request-ai", "/sessions/pending", "/sessions/active"],
+            "chat": ["/sessions/{id}/messages", "/sessions/{id}/ai-message"],
+            "social": ["/friends/request", "/friends"],
+            "profile": ["/users/me", "/profiles/seeker", "/profiles/giver"],
+        }
+    }
+
+
 @app.get("/health")
 def healthcheck():
     return {"status": "ok", "service": "emotional-support-api"}
