@@ -979,26 +979,37 @@ def generate_ai_reply(
     )
 
     prompt = (
-        "You are an empathetic, compassionate, and supportive emotional listener in an app called HearU. "
-        "Your goal is to validate the user's feelings, offer comfort, and provide non-judgmental support. "
-        "Do not offer medical advice. If the user appears in crisis, kindly remind them of professional help.\n\n"
-        f"Conversation so far:\n{conversation_history}\n\nAI Response:"
+        f"Conversation so far:\n{conversation_history}\n\nPlease respond with empathy and care:"
     )
 
     api_key = os.getenv("GEMINI_API_KEY")
     ai_text = None
 
-    if api_key:
-        # Multi-model cascade: Try gemini-2.0-flash, then gemini-1.5-flash, then gemini-2.5-flash
-        candidate_models = ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
-        last_error = None
+    system_prompt = (
+        "You are a deeply compassionate, emotionally intelligent support companion in HearU — "
+        "a safe space for people seeking emotional support. You have a profound understanding of human emotions "
+        "and the complexity of the human experience. "
+        "Your role is to listen actively, validate feelings without judgment, and respond with warmth and empathy. "
+        "You never minimise someone's pain or rush to offer solutions. "
+        "You reflect back what you hear, gently ask open-ended questions to help the person explore their feelings, "
+        "and remind them they are not alone. "
+        "If someone appears to be in crisis or expresses thoughts of self-harm, respond with deep care and "
+        "gently guide them toward professional help and crisis resources. "
+        "Never offer medical diagnoses or prescriptions. "
+        "Speak in a warm, conversational, human tone — never clinical or robotic."
+    )
 
-        for model_name in candidate_models:
-            try:
+    if api_key:
+        try:
+            # Try 3.7-flash first, fall back to 3.6-flash only
+            for model_name in ["gemini-3.7-flash", "gemini-3.6-flash"]:
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
                 resp = http_requests.post(
                     url,
                     json={
+                        "system_instruction": {
+                            "parts": [{"text": system_prompt}]
+                        },
                         "contents": [{"parts": [{"text": prompt}]}],
                         "safetySettings": [
                             {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
@@ -1006,30 +1017,29 @@ def generate_ai_reply(
                             {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
                             {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
                         ],
+                        "generationConfig": {
+                            "temperature": 0.85,
+                            "maxOutputTokens": 300,
+                        },
                     },
                     timeout=20,
                 )
                 resp_data = resp.json()
                 if "candidates" in resp_data and resp_data["candidates"]:
-                    candidate = resp_data["candidates"][0]
-                    parts = candidate.get("content", {}).get("parts", [])
+                    parts = resp_data["candidates"][0].get("content", {}).get("parts", [])
                     if parts and "text" in parts[0]:
                         ai_text = parts[0]["text"].strip()
                         break
                 elif "error" in resp_data:
-                    last_error = resp_data["error"].get("message", "API Error")
-                    print(f"[GEMINI] Model {model_name} error: {last_error}")
-            except Exception as e:
-                last_error = str(e)
-                print(f"[GEMINI] Request error on {model_name}: {e}")
-
-        if not ai_text:
-            if last_error:
-                ai_text = f"I hear you and I am here for you. (AI note: {last_error})"
-            else:
-                ai_text = "I hear you and I am listening. Please take your time, and tell me more whenever you are ready."
+                    err_msg = resp_data["error"].get("message", "unknown")
+                    print(f"[GEMINI] {model_name} error: {err_msg}")
+                    if model_name == "gemini-3.6-flash":
+                        ai_text = f"I hear you and I care. (AI error: {err_msg})"
+        except Exception as e:
+            print(f"[GEMINI] Request failed: {e}")
+            ai_text = f"I hear you and I care deeply. (AI temporarily unavailable: {type(e).__name__})"
     else:
-        ai_text = "I hear you and I'm listening. Please set GEMINI_API_KEY in Render environment to enable live AI responses."
+        ai_text = "I'm here for you. Please set GEMINI_API_KEY in Render environment to enable live AI responses."
 
     ai_msg = ChatMessage(
         session_id=session_id,
