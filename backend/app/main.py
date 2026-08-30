@@ -177,6 +177,12 @@ def register(payload: RegisterRequest, db: Session = Depends(get_session)):
     existing = db.exec(select(User).where(User.email == payload.email)).first()
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # Check display name uniqueness
+    if payload.display_name:
+        existing_name = db.exec(select(User).where(User.display_name == payload.display_name)).first()
+        if existing_name:
+            raise HTTPException(status_code=400, detail="Display name already taken. Please choose another.")
     user = User(
         email=payload.email,
         password_hash=get_password_hash(payload.password),

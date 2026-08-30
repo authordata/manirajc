@@ -711,11 +711,20 @@
                     const display_name = document.getElementById('display_name').value;
                     const role = document.getElementById('role').value;
                     
-                    await apiCall('/auth/register', 'POST', {
+                    const regData = await apiCall('/auth/register', 'POST', {
                         email, password, display_name, role, is_anonymous: true
                     });
                     
-                    showToast('Registered successfully! Please login.', 'success');
+                    if (regData && regData.access_token) {
+                        // Auto-login after registration
+                        token = regData.access_token;
+                        localStorage.setItem('token', token);
+                        showToast('Registered successfully! Welcome to HearU!', 'success');
+                        await initApp();
+                        return;
+                    }
+                    
+                    showToast('Registered! Please login.', 'success');
                     switchAuthTab('login');
                     return;
                 }
@@ -755,7 +764,7 @@
         function showDashboard() {
             if (!currentUser) return showView('auth-view');
             
-            if (currentUser.role === 'giver') {
+            if (currentUser.role === 'support_giver' || currentUser.role === 'giver') {
                 showView('giver-dashboard');
                 loadGiverDashboard();
             } else {
