@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">HearU</string>
+    <string name="tagline">No estás solo</string>
+    <string name="login">Iniciar sesión</string>
+    <string name="register">Crear cuenta</string>
+    <string name="email_hint">Correo electrónico</string>
+    <string name="password_hint">Contraseña</string>
+    <string name="display_name_hint">Nombre para mostrar</string>
+    <string name="send_message_hint">Escribe un mensaje...</string>
+    <string name="send">Enviar</string>
+    <string name="emergency_help">Ayuda de emergencia</string>
+    <string name="connect">Conectar</string>
+    <string name="disclaimer_banner">Esto es apoyo entre pares, no terapia profesional. ¿En crisis? Llama al 988</string>
+    <string name="crisis_title">🚨 Nos preocupamos por ti</string>
+    <string name="crisis_message">Si estás en crisis, busca ayuda profesional de inmediato.\n\n📞 988 Línea de Prevención del Suicidio y Crisis\n📱 Línea de Crisis: Envía HOME al 741741\n\nNo estás solo.</string>
+    <string name="call_988">Llamar al 988</string>
+    <string name="continue_chat">Continuar chat</string>
+    <string name="friend_request_title">¿Enviar solicitud de amistad?</string>
+    <string name="friend_request_message">Tu identidad será revelada si aceptan. ¿Continuar?</string>
+    <string name="mood_prompt_before">¿Cómo te sientes en este momento?</string>
+    <string name="mood_prompt_after">¿Cómo te sientes ahora?</string>
+    <string name="otp_title">Verifica tu cuenta</string>
+    <string name="otp_subtitle">Hemos enviado un código de verificación a tu correo</string>
+    <string name="verify">Verificar</string>
+    <string name="resend_code">Reenviar código</string>
+    <string name="settings">Ajustes</string>
+    <string name="dark_mode">Modo oscuro</string>
+    <string name="notifications">Notificaciones</string>
+    <string name="delete_account">Eliminar cuenta</string>
+    <string name="logout">Cerrar sesión</string>
+    <string name="premium_upgrade">Mejorar a Premium</string>
+    <string name="premium_description">Obtén acceso a oyentes verificados y emparejamiento prioritario</string>
+    <string name="version_info">HearU v1.0.0</string>
+</resources>

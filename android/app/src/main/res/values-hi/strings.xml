@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">HearU</string>
+    <string name="tagline">आप अकेले नहीं हैं</string>
+    <string name="login">लॉगिन करें</string>
+    <string name="register">खाता बनाएं</string>
+    <string name="email_hint">ईमेल पता</string>
+    <string name="password_hint">पासवर्ड</string>
+    <string name="display_name_hint">प्रदर्शित नाम</string>
+    <string name="send_message_hint">एक संदेश टाइप करें...</string>
+    <string name="send">भेजें</string>
+    <string name="emergency_help">आपातकालीन मदद</string>
+    <string name="connect">जुड़ें</string>
+    <string name="disclaimer_banner">यह सहकर्मी समर्थन है, पेशेवर चिकित्सा नहीं। संकट में हैं? 988 पर कॉल करें</string>
+    <string name="crisis_title">🚨 हम आपकी परवाह करते हैं</string>
+    <string name="crisis_message">यदि आप संकट में हैं, तो कृपया तुरंत पेशेवर मदद लें।\n\n📞 988 सुसाइड एंड क्राइसिस लाइफलाइन\n📱 क्राइसिस टेक्स्ट लाइन: 741741 पर HOME टेक्स्ट करें\n\nआप अकेले नहीं हैं।</string>
+    <string name="call_988">988 पर कॉल करें</string>
+    <string name="continue_chat">चैट जारी रखें</string>
+    <string name="friend_request_title">मित्र अनुरोध भेजें?</string>
+    <string name="friend_request_message">यदि वे स्वीकार करते हैं तो आपकी पहचान प्रकट हो जाएगी। जारी रखें?</string>
+    <string name="mood_prompt_before">आप अभी कैसा महसूस कर रहे हैं?</string>
+    <string name="mood_prompt_after">अब आप कैसा महसूस कर रहे हैं?</string>
+    <string name="otp_title">अपना खाता सत्यापित करें</string>
+    <string name="otp_subtitle">हमने आपके ईमेल पर एक सत्यापन कोड भेजा है</string>
+    <string name="verify">सत्यापित करें</string>
+    <string name="resend_code">कोड फिर से भेजें</string>
+    <string name="settings">सेटिंग्स</string>
+    <string name="dark_mode">डार्क मोड</string>
+    <string name="notifications">सूचनाएं</string>
+    <string name="delete_account">खाता हटाएं</string>
+    <string name="logout">लॉग आउट</string>
+    <string name="premium_upgrade">प्रीमियम में अपग्रेड करें</string>
+    <string name="premium_description">सत्यापित श्रोताओं और प्राथमिकता मिलान तक पहुंच प्राप्त करें</string>
+    <string name="version_info">HearU v1.0.0</string>
+</resources>

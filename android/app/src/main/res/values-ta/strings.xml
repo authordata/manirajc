@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">HearU</string>
+    <string name="tagline">நீங்கள் தனியாக இல்லை</string>
+    <string name="login">உள்நுழைய</string>
+    <string name="register">கணக்கை உருவாக்கு</string>
+    <string name="email_hint">மின்னஞ்சல் முகவரி</string>
+    <string name="password_hint">கடவுச்சொல்</string>
+    <string name="display_name_hint">காட்சி பெயர்</string>
+    <string name="send_message_hint">ஒரு செய்தியை தட்டச்சு செய்க...</string>
+    <string name="send">அனுப்பு</string>
+    <string name="emergency_help">அவசர உதவி</string>
+    <string name="connect">இணைக்க</string>
+    <string name="disclaimer_banner">இது சக ஆதரவு, தொழில்முறை சிகிச்சை அல்ல. நெருக்கடியில்? 988 ஐ அழைக்கவும்</string>
+    <string name="crisis_title">🚨 நாங்கள் உங்கள் மீது அக்கறை கொள்கிறோம்</string>
+    <string name="crisis_message">நீங்கள் நெருக்கடியில் இருந்தால், தயவுசெய்து உடனடியாக தொழில்முறை உதவியை அணுகவும்.\n\n📞 988 தற்கொலை மற்றும் நெருக்கடி லைஃப்லைன்\n📱 நெருக்கடி உரை வரி: 741741 க்கு HOME என உரை அனுப்பவும்\n\nநீங்கள் தனியாக இல்லை.</string>
+    <string name="call_988">988 ஐ அழைக்கவும்</string>
+    <string name="continue_chat">அரட்டையைத் தொடரவும்</string>
+    <string name="friend_request_title">நட்பு கோரிக்கையை அனுப்பவா?</string>
+    <string name="friend_request_message">அவர்கள் ஏற்றுக்கொண்டால் உங்கள் அடையாளம் வெளிப்படுத்தப்படும். தொடரவா?</string>
+    <string name="mood_prompt_before">நீங்கள் இப்போது எப்படி உணர்கிறீர்கள்?</string>
+    <string name="mood_prompt_after">நீங்கள் இப்போது எப்படி உணர்கிறீர்கள்?</string>
+    <string name="otp_title">உங்கள் கணக்கை சரிபார்க்கவும்</string>
+    <string name="otp_subtitle">உங்கள் மின்னஞ்சலுக்கு சரிபார்ப்பு குறியீட்டை அனுப்பினோம்</string>
+    <string name="verify">சரிபார்க்கவும்</string>
+    <string name="resend_code">குறியீட்டை மீண்டும் அனுப்பு</string>
+    <string name="settings">அமைப்புகள்</string>
+    <string name="dark_mode">இருண்ட பயன்முறை</string>
+    <string name="notifications">அறிவிப்புகள்</string>
+    <string name="delete_account">கணக்கை நீக்கு</string>
+    <string name="logout">வெளியேறு</string>
+    <string name="premium_upgrade">பிரீமியத்திற்கு மேம்படுத்தவும்</string>
+    <string name="premium_description">சரிபார்க்கப்பட்ட கேட்போர் மற்றும் முன்னுரிமை பொருத்தங்களுக்கான அணுகலைப் பெறுங்கள்</string>
+    <string name="version_info">HearU v1.0.0</string>
+</resources>

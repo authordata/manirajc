@@ -71,4 +71,10 @@ interface ApiService {
 
     @DELETE("/users/me")
     suspend fun deleteAccount(): Response<SuccessResponse>
+
+    @POST("/subscriptions/upgrade")
+    suspend fun upgradeToPremium(): Response<SuccessResponse>
+
+    @GET("/subscriptions/status")
+    suspend fun getSubscriptionStatus(): Response<SubscriptionStatus>
 }
