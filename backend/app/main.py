@@ -1,9 +1,9 @@
 import os
 import random
 from datetime import datetime, timedelta
-from typing import Annotated
+from typing import Annotated, Dict, List
 
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session, select, func
 
@@ -43,6 +43,38 @@ from .schemas import (
 from .security import create_access_token, decode_access_token, hash_password, verify_password
 
 app = FastAPI(title="Emotional Support Platform API", version="0.2.0")
+
+# Connection manager for WebSocket sessions
+class ConnectionManager:
+    def __init__(self):
+        # session_id -> list of active websocket connections
+        self.active_connections: Dict[int, List[WebSocket]] = {}
+    
+    async def connect(self, websocket: WebSocket, session_id: int):
+        await websocket.accept()
+        if session_id not in self.active_connections:
+            self.active_connections[session_id] = []
+        self.active_connections[session_id].append(websocket)
+    
+    def disconnect(self, websocket: WebSocket, session_id: int):
+        if session_id in self.active_connections:
+            self.active_connections[session_id].remove(websocket)
+            if not self.active_connections[session_id]:
+                del self.active_connections[session_id]
+    
+    async def broadcast_to_session(self, session_id: int, message: dict):
+        if session_id in self.active_connections:
+            for connection in self.active_connections[session_id]:
+                try:
+                    await connection.send_json(message)
+                except Exception:
+                    pass
+
+manager = ConnectionManager()
+
+# Giver notification connections
+giver_connections: Dict[int, WebSocket] = {}
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "https://hearu.app"],
@@ -230,7 +262,7 @@ def upsert_giver_profile(
 
 
 @app.post("/sessions/request")
-def request_human_session(
+async def request_human_session(
     payload: SessionRequest,
     user: User = Depends(current_user),
     session: Session = Depends(get_session),
@@ -247,6 +279,17 @@ def request_human_session(
     session.add(chat_session)
     session.commit()
     session.refresh(chat_session)
+
+    # After creating the session, notify available givers
+    for giver_id, ws in giver_connections.items():
+        try:
+            await ws.send_json({
+                "type": "new_session",
+                "session_id": chat_session.id,
+                "cause": payload.cause,
+            })
+        except Exception:
+            pass
 
     return {
         "session_id": chat_session.id,
@@ -850,3 +893,111 @@ def subscription_status(user: User = Depends(current_user)):
             "crisis_support": True
         }
     }
+
+
+@app.websocket("/ws/chat/{session_id}")
+async def websocket_chat(websocket: WebSocket, session_id: int):
+    """WebSocket endpoint for real-time chat in a session"""
+    # Authenticate via query param token
+    token = websocket.query_params.get("token")
+    if not token:
+        await websocket.close(code=4001, reason="Missing token")
+        return
+    
+    try:
+        user_id = int(decode_access_token(token))
+    except Exception:
+        await websocket.close(code=4001, reason="Invalid token")
+        return
+    
+    with next(get_session()) as db:
+        user = db.get(User, user_id)
+        chat_session = db.get(ChatSession, session_id)
+        
+        if not user or not chat_session:
+            await websocket.close(code=4004, reason="Not found")
+            return
+        
+        if user.id not in [chat_session.seeker_id, chat_session.giver_id]:
+            await websocket.close(code=4003, reason="Not authorized")
+            return
+    
+    await manager.connect(websocket, session_id)
+    
+    try:
+        while True:
+            data = await websocket.receive_json()
+            content = data.get("content", "").strip()
+            if not content:
+                continue
+            
+            with next(get_session()) as db:
+                user = db.get(User, user_id)
+                chat_session = db.get(ChatSession, session_id)
+                sender_label = "seeker" if user.id == chat_session.seeker_id else "giver"
+                
+                message = ChatMessage(
+                    session_id=session_id,
+                    sender_user_id=user.id,
+                    sender_label=sender_label,
+                    content=content,
+                )
+                db.add(message)
+                db.commit()
+                db.refresh(message)
+                
+                # Check for crisis keywords
+                crisis_detected = False
+                crisis_keywords = ["suicide", "kill myself", "end my life", "self-harm", 
+                                   "want to die", "hurt myself", "no reason to live"]
+                content_lower = content.lower()
+                for keyword in crisis_keywords:
+                    if keyword in content_lower:
+                        crisis_detected = True
+                        break
+                
+                broadcast_msg = {
+                    "type": "message",
+                    "id": message.id,
+                    "sender_label": sender_label,
+                    "content": content,
+                    "created_at": str(message.created_at),
+                    "crisis_detected": crisis_detected,
+                }
+                
+                await manager.broadcast_to_session(session_id, broadcast_msg)
+                
+                if crisis_detected:
+                    crisis_msg = {
+                        "type": "crisis_alert",
+                        "content": "If you are in crisis, please reach out immediately:\n988 Suicide & Crisis Lifeline\nCrisis Text Line: Text HOME to 741741",
+                        "sender_label": "system",
+                    }
+                    await manager.broadcast_to_session(session_id, crisis_msg)
+    
+    except WebSocketDisconnect:
+        manager.disconnect(websocket, session_id)
+
+
+@app.websocket("/ws/notifications")
+async def websocket_notifications(websocket: WebSocket):
+    """WebSocket for real-time notifications (new sessions, friend requests)"""
+    token = websocket.query_params.get("token")
+    if not token:
+        await websocket.close(code=4001)
+        return
+    
+    try:
+        user_id = int(decode_access_token(token))
+    except Exception:
+        await websocket.close(code=4001)
+        return
+    
+    await websocket.accept()
+    giver_connections[user_id] = websocket
+    
+    try:
+        while True:
+            await websocket.receive_text()  # Keep alive
+    except WebSocketDisconnect:
+        giver_connections.pop(user_id, None)
