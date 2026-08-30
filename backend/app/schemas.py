@@ -97,3 +97,13 @@ class FriendRequestRespond(BaseModel):
 class MoodCreate(BaseModel):
     mood_before: int
     mood_after: Optional[int] = None
+
+class SessionInfo(BaseModel):
+    session_id: int
+    cause: str | None = None
+    status: str
+    is_ai_session: bool = False
+    created_at: str
+    seeker_alias: str | None = None
+    last_message: str | None = None
+    last_message_time: str | None = None

@@ -238,14 +238,10 @@ def request_human_session(
     if user.role != Role.SUPPORT_SEEKER:
         raise HTTPException(status_code=403, detail="Only seekers can request support")
 
-    available_giver = session.exec(
-        select(GiverProfile).where(GiverProfile.is_available.is_(True))
-    ).first()
-
     chat_session = ChatSession(
         seeker_id=user.id,
-        giver_id=available_giver.user_id if available_giver else None,
-        status=SessionStatus.ACTIVE if available_giver else SessionStatus.OPEN,
+        giver_id=None,  # No auto-assignment
+        status=SessionStatus.OPEN,  # Always OPEN until giver accepts
         cause=payload.cause,
     )
     session.add(chat_session)
@@ -285,6 +281,126 @@ def request_ai_session(
         "giver_assigned": None,
         "is_ai_session": True,
     }
+
+
+@app.get("/sessions/pending")
+def get_pending_sessions(user: User = Depends(current_user), db: Session = Depends(get_session)):
+    """Get all OPEN sessions waiting for a giver (giver dashboard)"""
+    if user.role != Role.SUPPORT_GIVER:
+        raise HTTPException(status_code=403, detail="Only givers can view pending sessions")
+    sessions = db.exec(
+        select(ChatSession).where(ChatSession.status == SessionStatus.OPEN)
+        .order_by(ChatSession.created_at.desc())
+    ).all()
+    # Return session info with cause and seeker alias (not real name)
+    result = []
+    for s in sessions:
+        result.append({
+            "session_id": s.id,
+            "cause": s.cause,
+            "status": s.status,
+            "created_at": str(s.created_at),
+            "seeker_alias": f"Seeker #{s.seeker_id % 1000}",  # Anonymous alias
+        })
+    return result
+
+
+@app.post("/sessions/{session_id}/accept")
+def accept_session(session_id: int, user: User = Depends(current_user), db: Session = Depends(get_session)):
+    """Giver accepts an open session"""
+    if user.role != Role.SUPPORT_GIVER:
+        raise HTTPException(status_code=403, detail="Only givers can accept sessions")
+    chat_session = db.get(ChatSession, session_id)
+    if not chat_session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if chat_session.status != SessionStatus.OPEN:
+        raise HTTPException(status_code=400, detail="Session is no longer open")
+    if chat_session.giver_id is not None:
+        raise HTTPException(status_code=400, detail="Session already has a giver")
+    
+    chat_session.giver_id = user.id
+    chat_session.status = SessionStatus.ACTIVE
+    db.add(chat_session)
+    db.commit()
+    
+    # Add a system message
+    system_msg = ChatMessage(
+        session_id=session_id,
+        sender_user_id=None,
+        sender_label="system",
+        content="A support giver has joined the session. You can now chat.",
+    )
+    db.add(system_msg)
+    db.commit()
+    
+    return {"success": True, "session_id": session_id, "status": "active"}
+
+
+@app.post("/sessions/{session_id}/reject")
+def reject_session(session_id: int, user: User = Depends(current_user), db: Session = Depends(get_session)):
+    """Giver rejects/passes on an open session"""
+    # Just return success - session stays open for other givers
+    return {"success": True, "message": "Session passed"}
+
+
+@app.post("/givers/toggle-availability")
+def toggle_availability(user: User = Depends(current_user), db: Session = Depends(get_session)):
+    """Toggle giver's availability status"""
+    if user.role != Role.SUPPORT_GIVER:
+        raise HTTPException(status_code=403, detail="Only givers can toggle availability")
+    profile = db.exec(select(GiverProfile).where(GiverProfile.user_id == user.id)).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="Giver profile not found")
+    profile.is_available = not profile.is_available
+    db.add(profile)
+    db.commit()
+    return {"success": True, "is_available": profile.is_available}
+
+
+@app.get("/givers/availability")
+def get_availability(user: User = Depends(current_user), db: Session = Depends(get_session)):
+    """Get giver's current availability"""
+    if user.role != Role.SUPPORT_GIVER:
+        raise HTTPException(status_code=403, detail="Only givers")
+    profile = db.exec(select(GiverProfile).where(GiverProfile.user_id == user.id)).first()
+    return {"is_available": profile.is_available if profile else False}
+
+
+@app.get("/sessions/active")
+def get_active_sessions(user: User = Depends(current_user), db: Session = Depends(get_session)):
+    """Get all active sessions for the current user (both seekers and givers)"""
+    if user.role == Role.SUPPORT_SEEKER:
+        sessions = db.exec(
+            select(ChatSession).where(
+                ChatSession.seeker_id == user.id,
+                ChatSession.status.in_([SessionStatus.ACTIVE, SessionStatus.OPEN])
+            ).order_by(ChatSession.created_at.desc())
+        ).all()
+    else:
+        sessions = db.exec(
+            select(ChatSession).where(
+                ChatSession.giver_id == user.id,
+                ChatSession.status == SessionStatus.ACTIVE
+            ).order_by(ChatSession.created_at.desc())
+        ).all()
+    
+    result = []
+    for s in sessions:
+        # Get last message preview
+        last_msg = db.exec(
+            select(ChatMessage).where(ChatMessage.session_id == s.id)
+            .order_by(ChatMessage.created_at.desc())
+        ).first()
+        result.append({
+            "session_id": s.id,
+            "cause": s.cause,
+            "status": s.status,
+            "is_ai_session": s.is_ai_session,
+            "created_at": str(s.created_at),
+            "last_message": last_msg.content[:50] if last_msg else None,
+            "last_message_time": str(last_msg.created_at) if last_msg else None,
+        })
+    return result
 
 
 @app.get("/sessions")
