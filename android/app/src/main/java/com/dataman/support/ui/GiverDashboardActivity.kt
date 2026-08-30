@@ -24,6 +24,14 @@ class GiverDashboardActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        val prefs = getSharedPreferences("hearu_prefs", Context.MODE_PRIVATE)
+        if (!prefs.getBoolean("giver_trained", false)) {
+            startActivity(Intent(this, GiverOnboardingActivity::class.java))
+            finish()
+            return
+        }
+
         setContentView(R.layout.activity_giver_dashboard)
 
         val navView = findViewById<BottomNavigationView>(R.id.bottom_navigation)
@@ -56,7 +64,9 @@ class GiverDashboardActivity : BaseActivity() {
 
     override fun onResume() {
         super.onResume()
-        startPolling()
+        if (getSharedPreferences("hearu_prefs", Context.MODE_PRIVATE).getBoolean("giver_trained", false)) {
+            startPolling()
+        }
     }
 
     override fun onPause() {

@@ -39,6 +39,10 @@ class SettingsActivity : BaseActivity() {
             savePreference("notifications", isChecked)
         }
 
+        binding.btnShare.setOnClickListener {
+            shareApp()
+        }
+
         binding.btnLogout.setOnClickListener {
             val intent = Intent(this, OnboardingActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -100,5 +104,17 @@ class SettingsActivity : BaseActivity() {
 
     private fun savePreference(key: String, value: Boolean) {
         getSharedPreferences("settings", Context.MODE_PRIVATE).edit().putBoolean(key, value).apply()
+    }
+
+    private fun shareApp() {
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_SUBJECT, getString(R.string.app_name))
+            putExtra(Intent.EXTRA_TEXT, 
+                "Someone might need to hear this: You are not alone. " +
+                "HearU is a free, anonymous emotional support app. " +
+                "Download: https://play.google.com/store/apps/details?id=com.dataman.support")
+        }
+        startActivity(Intent.createChooser(shareIntent, "Share HearU with someone who might need it"))
     }
 }

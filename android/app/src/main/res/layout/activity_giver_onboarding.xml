@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <ViewFlipper
+        android:id="@+id/viewFlipper"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <!-- Screen 1: Welcome -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/welcome_giver"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:layout_marginBottom="16dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/giver_intro"
+                android:textSize="16sp"
+                android:gravity="center"
+                android:layout_marginBottom="32dp" />
+
+            <Button
+                android:id="@+id/btnNext1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/next" />
+        </LinearLayout>
+
+        <!-- Screen 2: Do's and Don'ts -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/dos_and_donts"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="16dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:text="✅ Listen without judgment\n✅ Validate feelings\n✅ Ask open-ended questions\n✅ Suggest professional help when needed\n\n❌ Never give medical advice\n❌ Never share personal contact info initially\n❌ Never dismiss someone's feelings\n❌ Never promise confidentiality you can't ensure"
+                android:textSize="16sp"
+                android:lineSpacingExtra="8dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <Button
+                    android:id="@+id/btnPrev2"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/previous"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_marginEnd="8dp"/>
+                <Button
+                    android:id="@+id/btnNext2"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/next" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Screen 3: Crisis Protocol -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/crisis_protocol"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="16dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:text="If someone mentions self-harm:\n\n• Stay calm, don't panic\n• Share 988 Lifeline info\n• Don't leave the chat abruptly\n• Report via the in-app report button"
+                android:textSize="16sp"
+                android:lineSpacingExtra="8dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <Button
+                    android:id="@+id/btnPrev3"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/previous"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_marginEnd="8dp"/>
+                <Button
+                    android:id="@+id/btnNext3"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/next" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Screen 4: Quiz -->
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/training_quiz"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="16dp" />
+
+                <!-- Q1 -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="1. A seeker says they feel worthless. What do you do?"
+                    android:textStyle="bold" />
+                <RadioGroup android:id="@+id/rgQ1" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="16dp">
+                    <RadioButton android:id="@+id/rbQ1A" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Tell them to cheer up" />
+                    <RadioButton android:id="@+id/rbQ1B" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Validate their feelings and listen" />
+                    <RadioButton android:id="@+id/rbQ1C" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Share your personal number" />
+                </RadioGroup>
+
+                <!-- Q2 -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="2. A seeker mentions wanting to hurt themselves. What do you do?"
+                    android:textStyle="bold" />
+                <RadioGroup android:id="@+id/rgQ2" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="16dp">
+                    <RadioButton android:id="@+id/rbQ2A" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Ignore it" />
+                    <RadioButton android:id="@+id/rbQ2B" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Share 988 Lifeline and stay in chat" />
+                    <RadioButton android:id="@+id/rbQ2C" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="End the session immediately" />
+                </RadioGroup>
+
+                <!-- Q3 -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="3. What is HearU?"
+                    android:textStyle="bold" />
+                <RadioGroup android:id="@+id/rgQ3" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="16dp">
+                    <RadioButton android:id="@+id/rbQ3A" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Professional therapy app" />
+                    <RadioButton android:id="@+id/rbQ3B" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Peer emotional support platform" />
+                    <RadioButton android:id="@+id/rbQ3C" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Dating app" />
+                </RadioGroup>
+                
+                <Space android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    <Button
+                        android:id="@+id/btnPrev4"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/previous"
+                        style="?attr/materialButtonOutlinedStyle"
+                        android:layout_marginEnd="8dp"/>
+                    <Button
+                        android:id="@+id/btnSubmitQuiz"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Finish" />
+                </LinearLayout>
+            </LinearLayout>
+        </ScrollView>
+    </ViewFlipper>
+</LinearLayout>

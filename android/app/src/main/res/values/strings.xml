@@ -55,4 +55,18 @@
     <string name="new_session">New Session</string>
     <string name="session_cause_hint">What\'s on your mind? (optional)</string>
     <string name="start_session">Start Session</string>
+
+    <string name="giver_training">Support Training</string>
+    <string name="welcome_giver">Welcome to HearU Support Team</string>
+    <string name="giver_intro">As a support giver, you\'ll help people through difficult moments. This training will prepare you for this important role.</string>
+    <string name="dos_and_donts">Do\'s and Don\'ts</string>
+    <string name="crisis_protocol">Crisis Protocol</string>
+    <string name="training_quiz">Quick Quiz</string>
+    <string name="quiz_passed">🎉 You passed! You\'re ready to help.</string>
+    <string name="quiz_failed">Please review the training and try again.</string>
+    <string name="next">Next</string>
+    <string name="previous">Previous</string>
+    <string name="share_hearu">Share HearU</string>
+    <string name="share_message">Someone might need to hear this: You are not alone. HearU is a free, anonymous emotional support app.</string>
+    <string name="training_required">Please complete the training before your first session.</string>
 </resources>

@@ -10,8 +10,12 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
-    private const val BASE_URL = "http://10.0.2.2:8000"
+    private const val DEV_URL = "http://10.0.2.2:8000/"
+    private const val PROD_URL = "https://hearu-api.onrender.com/"
     
+    private val BASE_URL: String
+        get() = if (BuildConfig.DEBUG) DEV_URL else PROD_URL
+
     @Volatile
     private var instance: ApiService? = null
 
