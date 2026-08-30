@@ -991,13 +991,15 @@ def generate_ai_reply(
         select(ChatMessage).where(ChatMessage.session_id == session_id).order_by(ChatMessage.created_at)
     ).all()
 
-    conversation_history = "\n".join(
-        [f"{'Seeker' if m.sender_user_id == user.id else 'AI'}: {m.content}" for m in messages]
-    )
+    # Only use last 6 messages to keep prompt short and fast
+    recent = messages[-6:] if len(messages) > 6 else messages
+    history_lines = []
+    for m in recent:
+        role = "User" if m.sender_user_id == user.id else "Supporter"
+        history_lines.append(f"{role}: {m.content}")
+    conversation_history = "\n".join(history_lines)
 
-    prompt = (
-        f"Conversation so far:\n{conversation_history}\n\nPlease respond with empathy and care:"
-    )
+    prompt = conversation_history
 
     api_key = os.getenv("GEMINI_API_KEY")
     ai_text = None
@@ -1035,8 +1037,8 @@ def generate_ai_reply(
                             {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
                         ],
                         "generationConfig": {
-                            "temperature": 0.85,
-                            "maxOutputTokens": 200,
+                            "temperature": 0.75,
+                            "maxOutputTokens": 150,
                         },
                     },
                     timeout=45,

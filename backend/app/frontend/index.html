@@ -975,22 +975,43 @@
             if (!content || !currentSessionId) return;
             
             input.value = '';
+
+            // Optimistic UI — show message instantly before API response
+            const msgContainer = document.getElementById('chat-messages');
+            const tempMsg = document.createElement('div');
+            tempMsg.className = 'message message-user';
+            tempMsg.style.cssText = 'align-self:flex-end;background:#6c63ff;color:#fff;padding:0.6rem 1rem;border-radius:1rem 1rem 0.2rem 1rem;max-width:75%;margin:0.25rem 0;';
+            tempMsg.textContent = content;
+            msgContainer.appendChild(tempMsg);
+            msgContainer.scrollTop = msgContainer.scrollHeight;
             
             try {
                 await apiCall(`/sessions/${currentSessionId}/messages`, 'POST', { content });
                 
                 if (currentSessionIsAi) {
+                    // Show typing indicator
+                    const typing = document.createElement('div');
+                    typing.id = 'typing-indicator';
+                    typing.style.cssText = 'color:#888;font-style:italic;padding:0.4rem 0.8rem;';
+                    typing.textContent = 'HearU AI is responding...';
+                    msgContainer.appendChild(typing);
+                    msgContainer.scrollTop = msgContainer.scrollHeight;
+                    
                     try {
                         await apiCall(`/sessions/${currentSessionId}/ai-message`, 'POST');
                     } catch (aiErr) {
                         console.error('AI response error:', aiErr);
+                    } finally {
+                        const t = document.getElementById('typing-indicator');
+                        if (t) t.remove();
                     }
                 }
                 
                 fetchMessages();
             } catch (err) {
                 showToast(err.message, 'error');
-                input.value = content; // restore
+                input.value = content;
+                if (tempMsg.parentNode) tempMsg.remove();
             }
         }
 
