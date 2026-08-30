@@ -53,4 +53,22 @@ interface ApiService {
 
     @PUT("/profiles/giver")
     suspend fun updateGiverProfile(@Body profile: GiverProfileUpsert): Response<SuccessResponse>
+
+    @POST("/auth/send-otp")
+    suspend fun sendOtp(@Body request: SendOtpRequest): Response<OtpResponse>
+
+    @POST("/auth/verify-otp")
+    suspend fun verifyOtp(@Body request: VerifyOtpRequest): Response<SuccessResponse>
+
+    @POST("/friends/request")
+    suspend fun sendFriendRequest(@Body request: FriendRequestCreate): Response<FriendRequestResponse>
+
+    @PUT("/friends/{requestId}/respond")
+    suspend fun respondToFriendRequest(@Path("requestId") requestId: Int, @Body request: FriendRespondRequest): Response<SuccessResponse>
+
+    @GET("/friends")
+    suspend fun getFriends(): Response<List<FriendRequestResponse>>
+
+    @DELETE("/users/me")
+    suspend fun deleteAccount(): Response<SuccessResponse>
 }

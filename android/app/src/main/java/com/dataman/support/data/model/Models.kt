@@ -109,3 +109,16 @@ data class ReportRequest(
 data class SuccessResponse(
     val success: Boolean = true
 )
+
+// OTP
+data class SendOtpRequest(val otp_type: String) // 'email' or 'phone'
+data class VerifyOtpRequest(val otp_type: String, val code: String)
+data class OtpResponse(val message: String, val otp_type: String)
+
+// Friend Request  
+data class FriendRequestCreate(@SerializedName("receiver_id") val receiverId: String, @SerializedName("session_id") val sessionId: Int)
+data class FriendRequestResponse(val id: Int, @SerializedName("sender_id") val senderId: String, @SerializedName("receiver_id") val receiverId: String, val status: String)
+data class FriendRespondRequest(val action: String) // 'accept' or 'reject'
+
+// Crisis
+data class CrisisInfo(@SerializedName("crisis_detected") val crisisDetected: Boolean = false, @SerializedName("crisis_message") val crisisMessage: String? = null)
