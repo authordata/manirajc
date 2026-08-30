@@ -7,7 +7,7 @@ from fastapi import Depends, FastAPI, Header, HTTPException, WebSocket, WebSocke
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session, select, func
 
-from google import genai
+import requests as http_requests  # for Gemini API
 
 from fastapi.responses import FileResponse
 import pathlib
@@ -781,7 +781,7 @@ def get_crisis_resources():
         {
             "name": "Veterans Crisis Line",
             "contact": "Dial 988 then press 1",
-            "description": "24/7 confidential crisis support for Veterans and their loved bones." if False else "24/7 confidential crisis support for Veterans and their loved ones.",
+            "description": "24/7 confidential crisis support for Veterans and their loved ones.",
             "type": "phone",
         }
     ]
@@ -885,20 +885,29 @@ def generate_ai_reply(
     api_key = os.getenv("GEMINI_API_KEY")
     if api_key:
         try:
-            client = genai.Client(api_key=api_key)
-            response = client.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=prompt,
-            )
-            ai_text = response.text
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+            resp = http_requests.post(url, json={
+                "contents": [{"parts": [{"text": prompt}]}],
+                "safetySettings": [
+                    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+                ],
+            }, timeout=30)
+            resp_data = resp.json()
+            if "candidates" in resp_data and resp_data["candidates"]:
+                ai_text = resp_data["candidates"][0]["content"]["parts"][0]["text"]
+            elif "error" in resp_data:
+                print(f"[GEMINI ERROR] {resp_data['error']}")
+                ai_text = f"I hear you. (AI error: {resp_data['error'].get('message', 'unknown')})"
+            else:
+                ai_text = "I'm here for you and I'm listening. Please tell me more about how you're feeling."
         except Exception as e:
-            import traceback
             print(f"[GEMINI ERROR] {type(e).__name__}: {e}")
-            traceback.print_exc()
-            ai_text = f"I hear you and I want to help. (AI temporarily unavailable: {type(e).__name__})"
+            ai_text = f"I hear you. (AI temporarily unavailable: {type(e).__name__})"
     else:
-        print("[GEMINI] No GEMINI_API_KEY found in environment!")
-        ai_text = "I'm here for you. Please set GEMINI_API_KEY in environment for AI responses."
+        ai_text = "I'm here for you. Please set GEMINI_API_KEY in Render environment for AI responses."
 
     ai_msg = ChatMessage(session_id=session_id, sender_user_id=None, sender_label="ai", content=ai_text)
     db.add(ai_msg)

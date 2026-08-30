@@ -581,9 +581,9 @@
             if (viewId === 'chat-view') {
                 chatInterval = setInterval(fetchMessages, 3000);
             } else if (viewId === 'giver-dashboard') {
-                dashboardInterval = setInterval(loadGiverDashboard, 5000);
+                dashboardInterval = setInterval(loadGiverDashboard, 15000);
             } else if (viewId === 'seeker-dashboard') {
-                dashboardInterval = setInterval(loadSeekerActiveSessions, 5000);
+                dashboardInterval = setInterval(loadSeekerActiveSessions, 15000);
             }
         }
 
@@ -618,8 +618,11 @@
                 const res = await fetch(`${API_BASE_URL}${endpoint}`, options);
                 
                 if (res.status === 401) {
-                    logout();
-                    throw new Error('Unauthorized');
+                    // Only logout if it's a user-initiated action, not background polling
+                    if (method !== 'GET') {
+                        logout();
+                    }
+                    throw new Error('Session expired. Please login again.');
                 }
                 
                 let data;
