@@ -580,7 +580,7 @@
             clearInterval(dashboardInterval);
             
             if (viewId === 'chat-view') {
-                chatInterval = setInterval(fetchMessages, 3000);
+                chatInterval = setInterval(fetchMessages, 8000);
             } else if (viewId === 'giver-dashboard') {
                 dashboardInterval = setInterval(loadGiverDashboard, 15000);
             } else if (viewId === 'seeker-dashboard') {
@@ -619,11 +619,12 @@
                 const res = await fetch(`${API_BASE_URL}${endpoint}`, options);
                 
                 if (res.status === 401) {
-                    // Only logout if it's a user-initiated action, not background polling
                     if (method !== 'GET') {
-                        logout();
+                        // Only logout on explicit user actions (POST/DELETE/PATCH)
+                        showToast('Session expired. Please login again.', 'error');
+                        setTimeout(logout, 2000);
                     }
-                    throw new Error('Session expired. Please login again.');
+                    throw new Error('Session expired');
                 }
                 
                 let data;
@@ -934,7 +935,12 @@
                 const messages = await apiCall(`/sessions/${currentSessionId}/messages`);
                 renderMessages(messages);
             } catch (err) {
-                console.error('Failed to fetch messages');
+                // Silently swallow polling errors (session may have ended)
+                if (err.message && err.message.includes('Session expired')) {
+                    clearInterval(chatInterval);
+                    showToast('Session has ended.', 'info');
+                }
+                console.warn('fetchMessages:', err.message);
             }
         }
 

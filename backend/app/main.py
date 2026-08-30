@@ -174,7 +174,7 @@ def delete_me(user: User = Depends(current_user), db: Session = Depends(get_sess
 def register(payload: RegisterRequest, db: Session = Depends(get_session)):
     existing = db.exec(select(User).where(User.email == payload.email)).first()
     if existing:
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(status_code=400, detail="Email already registered. Please login instead.")
 
     disp_name = payload.get_display_name()
     if payload.display_name and payload.display_name.strip():
@@ -498,7 +498,8 @@ def auto_match_giver(db: Session, cause: str | None = None, seeker_id: int | Non
             overlap = cause_words & exp_words
             if overlap:
                 score += 30 + len(overlap) * 5
-            active_count = db.exec(
+
+        active_count = db.exec(
             select(func.count(ChatSession.id)).where(
                 ChatSession.giver_id == user.id,
                 ChatSession.status == SessionStatus.ACTIVE
@@ -1035,10 +1036,10 @@ def generate_ai_reply(
                         ],
                         "generationConfig": {
                             "temperature": 0.85,
-                            "maxOutputTokens": 300,
+                            "maxOutputTokens": 200,
                         },
                     },
-                    timeout=20,
+                    timeout=45,
                 )
                 resp_data = resp.json()
                 if "candidates" in resp_data and resp_data["candidates"]:
