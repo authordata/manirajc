@@ -520,7 +520,7 @@ def auto_match_giver(db: Session, cause: str | None = None, seeker_id: int | Non
             score += 5
 
         candidates.append((score, user))
-
+    
     if not candidates:
         return None
 
@@ -990,7 +990,7 @@ def generate_ai_reply(
 
     if api_key:
         # Multi-model cascade: Try gemini-2.0-flash, then gemini-1.5-flash, then gemini-2.5-flash
-        candidate_models = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-flash"]
+        candidate_models = ["gemini-2.0-flash-exp", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
         last_error = None
 
         for model_name in candidate_models:
