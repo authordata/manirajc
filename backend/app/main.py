@@ -9,6 +9,9 @@ from sqlmodel import Session, select, func
 
 from google import genai
 
+from fastapi.responses import FileResponse
+import pathlib
+
 from .database import create_db_and_tables, get_session
 from .models import (
     ChatMessage,
@@ -121,21 +124,15 @@ def current_user(
 
 @app.get("/")
 def root():
-    return {
-        "app": "HearU",
-        "tagline": "You are not alone",
-        "version": "1.0.0",
-        "status": "running",
-        "docs": "/docs",
-        "health": "/health",
-        "endpoints": {
-            "auth": ["/auth/register", "/auth/login", "/auth/send-otp", "/auth/verify-otp"],
-            "sessions": ["/sessions/request", "/sessions/request-ai", "/sessions/pending", "/sessions/active"],
-            "chat": ["/sessions/{id}/messages", "/sessions/{id}/ai-message"],
-            "social": ["/friends/request", "/friends"],
-            "profile": ["/users/me", "/profiles/seeker", "/profiles/giver"],
-        }
-    }
+    # Serve the web frontend
+    frontend_paths = [
+        pathlib.Path(__file__).parent.parent / "frontend" / "index.html",  # local dev
+        pathlib.Path("/app/frontend/index.html"),  # Docker/Render
+    ]
+    for p in frontend_paths:
+        if p.exists():
+            return FileResponse(str(p), media_type="text/html")
+    return {"app": "HearU", "docs": "/docs", "status": "running"}
 
 
 @app.get("/health")
