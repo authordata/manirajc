@@ -16,7 +16,8 @@
         <activity android:name=".ui.ProfileActivity" />
         <activity android:name=".ui.ChatActivity" />
         <activity android:name=".ui.AuthActivity" />
-        <activity android:name=".ui.OnboardingActivity">
+        <activity android:name=".ui.OnboardingActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
