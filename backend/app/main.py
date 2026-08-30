@@ -7,7 +7,7 @@ from fastapi import Depends, FastAPI, Header, HTTPException, WebSocket, WebSocke
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session, select, func
 
-import google.generativeai as genai
+from google import genai
 
 from .database import create_db_and_tables, get_session
 from .models import (
@@ -84,8 +84,9 @@ app.add_middleware(
 )
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+gemini_client = None
 if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
+    gemini_client = genai.Client(api_key=GEMINI_API_KEY)
 
 CRISIS_KEYWORDS = ['suicide', 'kill myself', 'end my life', 'self-harm', 'want to die', 'hurt myself']
 
@@ -526,7 +527,7 @@ def ai_message(
             "Would you like grounding tips, reflective questions, or to continue venting?"
         )
         
-        if GEMINI_API_KEY:
+        if gemini_client:
             try:
                 # Get last 10 messages before the current one to build history
                 past_messages = db.exec(
@@ -560,13 +561,25 @@ def ai_message(
                     "- Suggest professional resources when appropriate"
                 )
                 
-                model = genai.GenerativeModel(
-                    model_name="gemini-2.5-flash-preview-05-20",
-                    system_instruction=sys_instruct
-                )
+                contents = []
+                for msg in history:
+                    contents.append(genai.types.Content(
+                        role=msg["role"],
+                        parts=[genai.types.Part(text=msg["parts"][0])]
+                    ))
+                contents.append(genai.types.Content(
+                    role="user",
+                    parts=[genai.types.Part(text=payload.content)]
+                ))
                 
-                chat = model.start_chat(history=history)
-                response = chat.send_message(payload.content)
+                response = gemini_client.models.generate_content(
+                    model="gemini-2.5-flash-preview-05-20",
+                    contents=contents,
+                    config=genai.types.GenerateContentConfig(
+                        system_instruction=sys_instruct,
+                        max_output_tokens=256,
+                    ),
+                )
                 reply = response.text
             except Exception as e:
                 print(f"Gemini API error: {e}")
