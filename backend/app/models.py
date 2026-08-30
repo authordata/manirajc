@@ -27,6 +27,7 @@ class User(SQLModel, table=True):
     phone_number: Optional[str] = None
     is_phone_verified: bool = False
     is_email_verified: bool = False
+    is_premium: bool = False
 
 
 class OtpCode(SQLModel, table=True):

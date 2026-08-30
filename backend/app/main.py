@@ -388,15 +388,21 @@ def ai_message(
                     history.append({"role": role, "parts": [msg.content]})
                     
                 sys_instruct = (
-                    "You are HearU, a compassionate AI emotional support companion. "
-                    "You listen with empathy, validate feelings, and offer gentle coping strategies. "
-                    "You are NOT a therapist. Always remind users to seek professional help for serious issues. "
-                    "Keep responses warm, concise (2-3 sentences), and supportive. "
-                    "Never diagnose conditions or prescribe medication."
+                    "You are HearU, a compassionate AI emotional support companion created to help people through difficult moments. \n\n"
+                    "Guidelines:\n"
+                    "- Listen with deep empathy and validate feelings\n"
+                    "- Offer gentle coping strategies (breathing exercises, grounding techniques, journaling prompts)\n"
+                    "- Keep responses warm, concise (2-3 sentences), and supportive\n"
+                    "- You are NOT a therapist or medical professional - remind users to seek professional help for serious issues\n"
+                    "- Never diagnose conditions, prescribe medication, or provide medical advice\n"
+                    "- If someone mentions self-harm or suicide, immediately provide crisis resources (988 Lifeline)\n"
+                    "- Remember context from the conversation to provide continuity\n"
+                    "- Use the person's emotional state to guide your response tone\n"
+                    "- Suggest professional resources when appropriate"
                 )
                 
                 model = genai.GenerativeModel(
-                    model_name="gemini-2.0-flash",
+                    model_name="gemini-2.5-flash-preview-05-20",
                     system_instruction=sys_instruct
                 )
                 
@@ -704,3 +710,27 @@ def list_friends(user: User = Depends(current_user), db: Session = Depends(get_s
         friends.append({"friend_id": friend_id, "session_id": r.session_id})
         
     return friends
+
+
+@app.post("/subscriptions/upgrade")
+def upgrade_to_premium(user: User = Depends(current_user), db: Session = Depends(get_session)):
+    """Upgrade user to premium tier (verified listeners, priority matching)"""
+    user.is_premium = True
+    db.add(user)
+    db.commit()
+    return {"success": True, "tier": "premium", "message": "Welcome to HearU Premium!"}
+
+@app.get("/subscriptions/status")
+def subscription_status(user: User = Depends(current_user)):
+    """Check user's subscription status"""
+    return {
+        "is_premium": getattr(user, 'is_premium', False),
+        "tier": "premium" if getattr(user, 'is_premium', False) else "free",
+        "features": {
+            "verified_listeners": getattr(user, 'is_premium', False),
+            "priority_matching": getattr(user, 'is_premium', False),
+            "session_history": True,
+            "ai_support": True,
+            "crisis_support": True
+        }
+    }
