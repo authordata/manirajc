@@ -28,94 +28,104 @@ from .models import (
     MoodRating,
 )
 from .schemas import (
-    AuthResponse,
+    ChatMessageCreate,
+    ChatMessageRead,
+    ChatSessionRead,
     FeedbackCreate,
     FriendRequestCreate,
-    FriendRequestRespond,
-    GiverProfileUpsert,
+    GiverProfileCreate,
+    GiverProfileRead,
+    GiverProfileUpdate,
     LoginRequest,
-    MessageCreate,
+    OtpRequest,
+    OtpVerify,
     RegisterRequest,
     ReportCreate,
-    SeekerProfileUpsert,
-    SendOtpRequest,
+    SeekerProfileCreate,
+    SeekerProfileRead,
+    SeekerProfileUpdate,
     SessionRequest,
-    VerifyOtpRequest,
-    MoodCreate,
+    TokenResponse,
+    UserRead,
+    MoodRatingCreate,
+    MoodRatingRead,
 )
-from .security import create_access_token, decode_access_token, hash_password, verify_password
+from .security import create_access_token, decode_access_token, get_password_hash, verify_password
 
-app = FastAPI(title="Emotional Support Platform API", version="0.2.0")
-
-# Connection manager for WebSocket sessions
-class ConnectionManager:
-    def __init__(self):
-        # session_id -> list of active websocket connections
-        self.active_connections: Dict[int, List[WebSocket]] = {}
-    
-    async def connect(self, websocket: WebSocket, session_id: int):
-        await websocket.accept()
-        if session_id not in self.active_connections:
-            self.active_connections[session_id] = []
-        self.active_connections[session_id].append(websocket)
-    
-    def disconnect(self, websocket: WebSocket, session_id: int):
-        if session_id in self.active_connections:
-            self.active_connections[session_id].remove(websocket)
-            if not self.active_connections[session_id]:
-                del self.active_connections[session_id]
-    
-    async def broadcast_to_session(self, session_id: int, message: dict):
-        if session_id in self.active_connections:
-            for connection in self.active_connections[session_id]:
-                try:
-                    await connection.send_json(message)
-                except Exception:
-                    pass
-
-manager = ConnectionManager()
-
-# Giver notification connections
-giver_connections: Dict[int, WebSocket] = {}
+app = FastAPI(title="HearU API", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://hearu.app"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-gemini_client = None
-if GEMINI_API_KEY:
-    gemini_client = genai.Client(api_key=GEMINI_API_KEY)
-
-CRISIS_KEYWORDS = ['suicide', 'kill myself', 'end my life', 'self-harm', 'want to die', 'hurt myself']
-
-def check_crisis(content: str) -> bool:
-    content_lower = content.lower()
-    return any(keyword in content_lower for keyword in CRISIS_KEYWORDS)
 
 @app.on_event("startup")
-def startup() -> None:
+def on_startup():
     create_db_and_tables()
 
 
 def current_user(
     authorization: Annotated[str | None, Header()] = None,
-    session: Session = Depends(get_session),
+    db: Session = Depends(get_session),
 ) -> User:
-    if not authorization or not authorization.lower().startswith("bearer "):
-        raise HTTPException(status_code=401, detail="Missing bearer token")
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid token")
+    token = authorization.split(" ")[1]
+    payload = decode_access_token(token)
+    if not payload or "sub" not in payload:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    user_id = int(payload["sub"])
+    user = db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    return user
 
-    token = authorization.split(" ", maxsplit=1)[1]
-    try:
-        user_id = int(decode_access_token(token))
-    except ValueError as exc:
-        raise HTTPException(status_code=401, detail=str(exc)) from exc
 
-    user = session.get(User, user_id)
+def get_user_from_token(token: str, db: Session) -> User | None:
+    payload = decode_access_token(token)
+    if not payload or "sub" not in payload:
+        return None
+    user_id = int(payload["sub"])
+    return db.get(User, user_id)
+
+
+def require_role(role: Role):
+    def role_checker(user: User = Depends(current_user)) -> User:
+        if user.role != role:
+            raise HTTPException(status_code=403, detail="Forbidden")
+        return user
+
+    return role_checker
+
+
+def require_admin(user: User = Depends(current_user)) -> User:
+    if not user.is_admin:
+        raise HTTPException(status_code=403, detail="Admin required")
+    return user
+
+
+def require_verified(user: User = Depends(current_user)) -> User:
+    if not (user.is_email_verified or user.is_phone_verified):
+        raise HTTPException(status_code=403, detail="Account not verified")
+    return user
+
+
+def current_user_optional(
+    authorization: Annotated[str | None, Header()] = None,
+    db: Session = Depends(get_session),
+) -> User | None:
+    if not authorization or not authorization.startswith("Bearer "):
+        return None
+    token = authorization.split(" ")[1]
+    payload = decode_access_token(token)
+    if not payload or "sub" not in payload:
+        return None
+    user_id = int(payload["sub"])
+    user = db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
     return user
@@ -126,8 +136,9 @@ def current_user(
 def root():
     # Serve the web frontend
     frontend_paths = [
-        pathlib.Path(__file__).parent.parent / "frontend" / "index.html",  # local dev
-        pathlib.Path("/app/frontend/index.html"),  # Docker/Render
+        pathlib.Path(__file__).parent / "frontend" / "index.html",
+        pathlib.Path(__file__).parent.parent / "frontend" / "index.html",
+        pathlib.Path("/app/frontend/index.html"),
     ]
     for p in frontend_paths:
         if p.exists():
@@ -158,876 +169,668 @@ def me(user: User = Depends(current_user)):
 def delete_me(user: User = Depends(current_user), db: Session = Depends(get_session)):
     db.delete(user)
     db.commit()
-    return {"success": True}
+    return {"status": "deleted"}
 
 
-@app.post("/auth/register", response_model=AuthResponse)
-def register(payload: RegisterRequest, session: Session = Depends(get_session)):
-    existing = session.exec(select(User).where(User.email == payload.email)).first()
+@app.post("/auth/register", response_model=TokenResponse)
+def register(payload: RegisterRequest, db: Session = Depends(get_session)):
+    existing = db.exec(select(User).where(User.email == payload.email)).first()
     if existing:
-        raise HTTPException(status_code=400, detail="Email already exists")
-
+        raise HTTPException(status_code=400, detail="Email already registered")
     user = User(
         email=payload.email,
-        password_hash=hash_password(payload.password),
+        phone_number=payload.phone_number,
+        hashed_password=get_password_hash(payload.password),
+        display_name=payload.display_name or (f"Anonymous-{random.randint(1000, 9999)}" if payload.is_anonymous else "User"),
         role=payload.role,
-        display_name=payload.display_name,
         is_anonymous=payload.is_anonymous,
     )
-    session.add(user)
-    session.commit()
-    session.refresh(user)
-
-    if user.role == Role.SUPPORT_SEEKER:
-        session.add(SeekerProfile(user_id=user.id))
-    else:
-        session.add(GiverProfile(user_id=user.id))
-    session.commit()
-
-    return AuthResponse(access_token=create_access_token(str(user.id)))
-
-
-@app.post("/auth/login", response_model=AuthResponse)
-def login(payload: LoginRequest, session: Session = Depends(get_session)):
-    user = session.exec(select(User).where(User.email == payload.email)).first()
-    if not user or not verify_password(payload.password, user.password_hash):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-
-    return AuthResponse(access_token=create_access_token(str(user.id)))
-
-
-@app.post("/auth/send-otp")
-def send_otp(payload: SendOtpRequest, user: User = Depends(current_user), db: Session = Depends(get_session)):
-    code = f"{random.randint(100000, 999999)}"
-    expires_at = datetime.utcnow() + timedelta(minutes=5)
-    otp = OtpCode(user_id=user.id, code=code, otp_type=payload.otp_type, expires_at=expires_at)
-    db.add(otp)
-    db.commit()
-    print(f"OTP for user {user.id} ({payload.otp_type}): {code}")
-    return {"success": True}
-
-
-@app.post("/auth/verify-otp")
-def verify_otp(payload: VerifyOtpRequest, user: User = Depends(current_user), db: Session = Depends(get_session)):
-    otp = db.exec(
-        select(OtpCode)
-        .where(OtpCode.user_id == user.id)
-        .where(OtpCode.otp_type == payload.otp_type)
-        .where(OtpCode.code == payload.code)
-        .where(OtpCode.is_used == False)
-        .where(OtpCode.expires_at > datetime.utcnow())
-        .order_by(OtpCode.id.desc())
-    ).first()
-    
-    if not otp:
-        raise HTTPException(status_code=400, detail="Invalid or expired OTP")
-        
-    otp.is_used = True
-    db.add(otp)
-    
-    if payload.otp_type == 'phone':
-        user.is_phone_verified = True
-    else:
-        user.is_email_verified = True
     db.add(user)
     db.commit()
-    return {"success": True}
+    db.refresh(user)
+
+    if user.role == Role.SEEKER:
+        db.add(SeekerProfile(user_id=user.id))
+    elif user.role == Role.GIVER:
+        db.add(GiverProfile(user_id=user.id))
+    db.commit()
+
+    token = create_access_token(user.id, {"role": user.role.value, "is_anonymous": user.is_anonymous})
+    return TokenResponse(access_token=token)
 
 
-@app.put("/profiles/seeker")
-def upsert_seeker_profile(
-    payload: SeekerProfileUpsert,
+@app.post("/auth/login", response_model=TokenResponse)
+def login(payload: LoginRequest, db: Session = Depends(get_session)):
+    user = db.exec(select(User).where(User.email == payload.email)).first()
+    if not user or not verify_password(payload.password, user.hashed_password):
+        raise HTTPException(status_code=400, detail="Invalid credentials")
+    token = create_access_token(user.id, {"role": user.role.value, "is_anonymous": user.is_anonymous})
+    return TokenResponse(access_token=token)
+
+
+@app.post("/auth/anonymous", response_model=TokenResponse)
+def create_anonymous_user(db: Session = Depends(get_session)):
+    anon_id = random.randint(10000, 99999)
+    user = User(
+        email=f"anon_{anon_id}@hearu.local",
+        hashed_password=get_password_hash("anonymous"),
+        display_name=f"Anonymous-{anon_id}",
+        role=Role.SEEKER,
+        is_anonymous=True,
+        is_email_verified=True,
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    db.add(SeekerProfile(user_id=user.id))
+    db.commit()
+    token = create_access_token(user.id, {"role": user.role.value, "is_anonymous": True})
+    return TokenResponse(access_token=token)
+
+
+@app.post("/auth/otp/send")
+def send_otp(payload: OtpRequest, db: Session = Depends(get_session)):
+    if not payload.email and not payload.phone_number:
+        raise HTTPException(status_code=400, detail="Provide email or phone number")
+    code = f"{random.randint(100000, 999999)}"
+    expires_at = datetime.utcnow() + timedelta(minutes=10)
+    otp = OtpCode(
+        email=payload.email,
+        phone_number=payload.phone_number,
+        code=code,
+        expires_at=expires_at,
+    )
+    db.add(otp)
+    db.commit()
+    # In production, send via email/SMS. Return code here for MVP/testing.
+    return {"status": "sent", "code": code}
+
+
+@app.post("/auth/otp/verify")
+def verify_otp(
+    payload: OtpVerify,
     user: User = Depends(current_user),
-    session: Session = Depends(get_session),
+    db: Session = Depends(get_session),
 ):
-    if user.role != Role.SUPPORT_SEEKER:
-        raise HTTPException(status_code=403, detail="Role not allowed")
+    query = select(OtpCode).where(
+        OtpCode.code == payload.code,
+        OtpCode.is_used == False,
+        OtpCode.expires_at >= datetime.utcnow(),
+    )
+    if payload.email:
+        query = query.where(OtpCode.email == payload.email)
+    if payload.phone_number:
+        query = query.where(OtpCode.phone_number == payload.phone_number)
+    otp = db.exec(query).first()
+    if not otp:
+        raise HTTPException(status_code=400, detail="Invalid or expired OTP")
+    otp.is_used = True
+    if payload.email:
+        user.is_email_verified = True
+    if payload.phone_number:
+        user.is_phone_verified = True
+    db.add(otp)
+    db.add(user)
+    db.commit()
+    return {"status": "verified"}
 
-    profile = session.exec(select(SeekerProfile).where(SeekerProfile.user_id == user.id)).first()
+
+@app.get("/profiles/seeker/me", response_model=SeekerProfileRead)
+def get_seeker_profile(
+    user: User = Depends(require_role(Role.SEEKER)),
+    db: Session = Depends(get_session),
+):
+    profile = db.exec(select(SeekerProfile).where(SeekerProfile.user_id == user.id)).first()
     if not profile:
         profile = SeekerProfile(user_id=user.id)
-
-    profile.gender = payload.gender
-    profile.age_range = payload.age_range
-    profile.causes_csv = payload.causes_csv
-    profile.visibility = payload.visibility
-
-    session.add(profile)
-    session.commit()
-    return {"success": True}
+        db.add(profile)
+        db.commit()
+        db.refresh(profile)
+    return profile
 
 
-@app.put("/profiles/giver")
-def upsert_giver_profile(
-    payload: GiverProfileUpsert,
-    user: User = Depends(current_user),
-    session: Session = Depends(get_session),
+@app.post("/profiles/seeker", response_model=SeekerProfileRead)
+def create_seeker_profile(
+    payload: SeekerProfileCreate,
+    user: User = Depends(require_role(Role.SEEKER)),
+    db: Session = Depends(get_session),
 ):
-    if user.role != Role.SUPPORT_GIVER:
-        raise HTTPException(status_code=403, detail="Role not allowed")
+    profile = db.exec(select(SeekerProfile).where(SeekerProfile.user_id == user.id)).first()
+    if profile:
+        raise HTTPException(status_code=400, detail="Profile already exists")
+    profile = SeekerProfile(user_id=user.id, **payload.model_dump())
+    db.add(profile)
+    db.commit()
+    db.refresh(profile)
+    return profile
 
-    profile = session.exec(select(GiverProfile).where(GiverProfile.user_id == user.id)).first()
+
+@app.patch("/profiles/seeker", response_model=SeekerProfileRead)
+def update_seeker_profile(
+    payload: SeekerProfileUpdate,
+    user: User = Depends(require_role(Role.SEEKER)),
+    db: Session = Depends(get_session),
+):
+    profile = db.exec(select(SeekerProfile).where(SeekerProfile.user_id == user.id)).first()
+    if not profile:
+        profile = SeekerProfile(user_id=user.id)
+        db.add(profile)
+    for key, value in payload.model_dump(exclude_unset=True).items():
+        setattr(profile, key, value)
+    db.commit()
+    db.refresh(profile)
+    return profile
+
+
+@app.get("/profiles/giver/me", response_model=GiverProfileRead)
+def get_giver_profile(
+    user: User = Depends(require_role(Role.GIVER)),
+    db: Session = Depends(get_session),
+):
+    profile = db.exec(select(GiverProfile).where(GiverProfile.user_id == user.id)).first()
     if not profile:
         profile = GiverProfile(user_id=user.id)
-
-    profile.about = payload.about
-    profile.experience = payload.experience
-    profile.is_available = payload.is_available
-
-    session.add(profile)
-    session.commit()
-    return {"success": True}
+        db.add(profile)
+        db.commit()
+        db.refresh(profile)
+    return profile
 
 
-@app.post("/sessions/request")
-async def request_human_session(
-    payload: SessionRequest,
-    user: User = Depends(current_user),
-    session: Session = Depends(get_session),
+@app.post("/profiles/giver", response_model=GiverProfileRead)
+def create_giver_profile(
+    payload: GiverProfileCreate,
+    user: User = Depends(require_role(Role.GIVER)),
+    db: Session = Depends(get_session),
 ):
-    if user.role != Role.SUPPORT_SEEKER:
-        raise HTTPException(status_code=403, detail="Only seekers can request support")
-
-    chat_session = ChatSession(
-        seeker_id=user.id,
-        giver_id=None,  # No auto-assignment
-        status=SessionStatus.OPEN,  # Always OPEN until giver accepts
-        cause=payload.cause,
-    )
-    session.add(chat_session)
-    session.commit()
-    session.refresh(chat_session)
-
-    # After creating the session, notify available givers
-    for giver_id, ws in giver_connections.items():
-        try:
-            await ws.send_json({
-                "type": "new_session",
-                "session_id": chat_session.id,
-                "cause": payload.cause,
-            })
-        except Exception:
-            pass
-
-    return {
-        "session_id": chat_session.id,
-        "status": chat_session.status,
-        "giver_assigned": chat_session.giver_id,
-        "is_ai_session": False,
-    }
+    profile = db.exec(select(GiverProfile).where(GiverProfile.user_id == user.id)).first()
+    if profile:
+        raise HTTPException(status_code=400, detail="Profile already exists")
+    profile = GiverProfile(user_id=user.id, **payload.model_dump())
+    db.add(profile)
+    db.commit()
+    db.refresh(profile)
+    return profile
 
 
-@app.post("/sessions/request-ai")
-def request_ai_session(
-    payload: SessionRequest,
-    user: User = Depends(current_user),
-    session: Session = Depends(get_session),
+@app.patch("/profiles/giver", response_model=GiverProfileRead)
+def update_giver_profile(
+    payload: GiverProfileUpdate,
+    user: User = Depends(require_role(Role.GIVER)),
+    db: Session = Depends(get_session),
 ):
-    if user.role != Role.SUPPORT_SEEKER:
-        raise HTTPException(status_code=403, detail="Only seekers can request AI support")
-
-    chat_session = ChatSession(
-        seeker_id=user.id,
-        giver_id=None,
-        is_ai_session=True,
-        status=SessionStatus.ACTIVE,
-        cause=payload.cause,
-    )
-    session.add(chat_session)
-    session.commit()
-    session.refresh(chat_session)
-    return {
-        "session_id": chat_session.id,
-        "status": chat_session.status,
-        "giver_assigned": None,
-        "is_ai_session": True,
-    }
-
-
-@app.get("/sessions/pending")
-def get_pending_sessions(user: User = Depends(current_user), db: Session = Depends(get_session)):
-    """Get all OPEN sessions waiting for a giver (giver dashboard)"""
-    if user.role != Role.SUPPORT_GIVER:
-        raise HTTPException(status_code=403, detail="Only givers can view pending sessions")
-    sessions = db.exec(
-        select(ChatSession).where(ChatSession.status == SessionStatus.OPEN)
-        .order_by(ChatSession.created_at.desc())
-    ).all()
-    # Return session info with cause and seeker alias (not real name)
-    result = []
-    for s in sessions:
-        result.append({
-            "session_id": s.id,
-            "cause": s.cause,
-            "status": s.status,
-            "created_at": str(s.created_at),
-            "seeker_alias": f"Seeker #{s.seeker_id % 1000}",  # Anonymous alias
-        })
-    return result
-
-
-@app.post("/sessions/{session_id}/accept")
-def accept_session(session_id: int, user: User = Depends(current_user), db: Session = Depends(get_session)):
-    """Giver accepts an open session"""
-    if user.role != Role.SUPPORT_GIVER:
-        raise HTTPException(status_code=403, detail="Only givers can accept sessions")
-    chat_session = db.get(ChatSession, session_id)
-    if not chat_session:
-        raise HTTPException(status_code=404, detail="Session not found")
-    if chat_session.status != SessionStatus.OPEN:
-        raise HTTPException(status_code=400, detail="Session is no longer open")
-    if chat_session.giver_id is not None:
-        raise HTTPException(status_code=400, detail="Session already has a giver")
-    
-    chat_session.giver_id = user.id
-    chat_session.status = SessionStatus.ACTIVE
-    db.add(chat_session)
+    profile = db.exec(select(GiverProfile).where(GiverProfile.user_id == user.id)).first()
+    if not profile:
+        profile = GiverProfile(user_id=user.id)
+        db.add(profile)
+    for key, value in payload.model_dump(exclude_unset=True).items():
+        setattr(profile, key, value)
     db.commit()
-    
-    # Add a system message
-    system_msg = ChatMessage(
-        session_id=session_id,
-        sender_user_id=None,
-        sender_label="system",
-        content="A support giver has joined the session. You can now chat.",
+    db.refresh(profile)
+    return profile
+
+
+@app.get("/givers/available", response_model=List[UserRead])
+def list_available_givers(db: Session = Depends(get_session)):
+    query = (
+        select(User)
+        .join(GiverProfile)
+        .where(User.role == Role.GIVER, GiverProfile.is_available == True)
     )
-    db.add(system_msg)
-    db.commit()
-    
-    return {"success": True, "session_id": session_id, "status": "active"}
-
-
-@app.post("/sessions/{session_id}/reject")
-def reject_session(session_id: int, user: User = Depends(current_user), db: Session = Depends(get_session)):
-    """Giver rejects/passes on an open session"""
-    # Just return success - session stays open for other givers
-    return {"success": True, "message": "Session passed"}
+    return db.exec(query).all()
 
 
 @app.post("/givers/toggle-availability")
-def toggle_availability(user: User = Depends(current_user), db: Session = Depends(get_session)):
-    """Toggle giver's availability status"""
-    if user.role != Role.SUPPORT_GIVER:
-        raise HTTPException(status_code=403, detail="Only givers can toggle availability")
+def toggle_giver_availability(
+    user: User = Depends(require_role(Role.GIVER)),
+    db: Session = Depends(get_session),
+):
     profile = db.exec(select(GiverProfile).where(GiverProfile.user_id == user.id)).first()
     if not profile:
-        raise HTTPException(status_code=404, detail="Giver profile not found")
-    profile.is_available = not profile.is_available
-    db.add(profile)
+        profile = GiverProfile(user_id=user.id, is_available=True)
+        db.add(profile)
+    else:
+        profile.is_available = not profile.is_available
+        db.add(profile)
     db.commit()
-    return {"success": True, "is_available": profile.is_available}
+    db.refresh(profile)
+    return {"status": "updated", "is_available": profile.is_available}
 
 
 @app.get("/givers/availability")
-def get_availability(user: User = Depends(current_user), db: Session = Depends(get_session)):
-    """Get giver's current availability"""
-    if user.role != Role.SUPPORT_GIVER:
-        raise HTTPException(status_code=403, detail="Only givers")
+def get_giver_availability(
+    user: User = Depends(require_role(Role.GIVER)),
+    db: Session = Depends(get_session),
+):
     profile = db.exec(select(GiverProfile).where(GiverProfile.user_id == user.id)).first()
-    return {"is_available": profile.is_available if profile else False}
+    if not profile:
+        return {"is_available": False}
+    return {"is_available": profile.is_available}
 
 
-@app.get("/sessions/active")
-def get_active_sessions(user: User = Depends(current_user), db: Session = Depends(get_session)):
-    """Get all active sessions for the current user (both seekers and givers)"""
-    if user.role == Role.SUPPORT_SEEKER:
-        sessions = db.exec(
-            select(ChatSession).where(
-                ChatSession.seeker_id == user.id,
-                ChatSession.status.in_([SessionStatus.ACTIVE, SessionStatus.OPEN])
-            ).order_by(ChatSession.created_at.desc())
-        ).all()
-    else:
-        sessions = db.exec(
-            select(ChatSession).where(
-                ChatSession.giver_id == user.id,
-                ChatSession.status == SessionStatus.ACTIVE
-            ).order_by(ChatSession.created_at.desc())
-        ).all()
-    
-    result = []
-    for s in sessions:
-        # Get last message preview
-        last_msg = db.exec(
-            select(ChatMessage).where(ChatMessage.session_id == s.id)
-            .order_by(ChatMessage.created_at.desc())
-        ).first()
-        result.append({
-            "session_id": s.id,
-            "cause": s.cause,
-            "status": s.status,
-            "is_ai_session": s.is_ai_session,
-            "created_at": str(s.created_at),
-            "last_message": last_msg.content[:50] if last_msg else None,
-            "last_message_time": str(last_msg.created_at) if last_msg else None,
-        })
-    return result
-
-
-@app.get("/sessions")
-def list_sessions(user: User = Depends(current_user), db: Session = Depends(get_session)):
-    if user.role == Role.SUPPORT_SEEKER:
-        query = select(ChatSession).where(ChatSession.seeker_id == user.id)
-    else:
-        query = select(ChatSession).where(ChatSession.giver_id == user.id)
-
-    return db.exec(query.order_by(ChatSession.created_at.desc())).all()
-
-
-@app.post("/sessions/{session_id}/messages")
-def send_message(
-    session_id: int,
-    payload: MessageCreate,
-    user: User = Depends(current_user),
+@app.get("/admin/givers/pending", response_model=List[GiverProfileRead])
+def list_pending_givers(
+    user: User = Depends(require_admin),
     db: Session = Depends(get_session),
 ):
-    chat_session = db.get(ChatSession, session_id)
-    if not chat_session:
-        raise HTTPException(status_code=404, detail="Session not found")
+    query = select(GiverProfile).where(GiverProfile.is_verified == False)
+    return db.exec(query).all()
 
-    if user.id not in [chat_session.seeker_id, chat_session.giver_id]:
-        raise HTTPException(status_code=403, detail="Not part of this session")
 
-    sender_label = "seeker" if user.id == chat_session.seeker_id else "giver"
-    message = ChatMessage(
-        session_id=session_id,
-        sender_user_id=user.id,
-        sender_label=sender_label,
-        content=payload.content,
-    )
-    db.add(message)
-    
-    crisis_detected = check_crisis(payload.content)
-    if crisis_detected:
-        crisis_message = ChatMessage(
-            session_id=session_id,
-            sender_user_id=None,
-            sender_label="system",
-            content="Crisis detected. Please reach out to an emergency hotline: 988 (US) or your local emergency services."
-        )
-        db.add(crisis_message)
-
+@app.post("/admin/givers/{giver_id}/verify")
+def verify_giver(
+    giver_id: int,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_session),
+):
+    profile = db.get(GiverProfile, giver_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail="Giver not found")
+    profile.is_verified = True
+    db.add(profile)
     db.commit()
-    db.refresh(message)
-
-    return {"id": message.id, "created_at": message.created_at, "crisis_detected": crisis_detected}
+    return {"status": "verified"}
 
 
-@app.post("/sessions/{session_id}/ai-message")
-def ai_message(
-    session_id: int,
-    payload: MessageCreate,
-    user: User = Depends(current_user),
-    db: Session = Depends(get_session),
-):
-    chat_session = db.get(ChatSession, session_id)
-    if not chat_session or not chat_session.is_ai_session:
-        raise HTTPException(status_code=404, detail="AI session not found")
-
-    if user.id != chat_session.seeker_id:
-        raise HTTPException(status_code=403, detail="Only seeker can use this AI session")
-
-    user_message = ChatMessage(
-        session_id=session_id,
-        sender_user_id=user.id,
-        sender_label="seeker",
-        content=payload.content,
+def auto_match_giver(db: Session, cause: str | None = None) -> User | None:
+    query = (
+        select(User)
+        .join(GiverProfile)
+        .where(User.role == Role.GIVER, GiverProfile.is_available == True)
     )
-    db.add(user_message)
-    
-    crisis_detected = check_crisis(payload.content)
-    if crisis_detected:
-        reply = "Crisis detected. Please reach out to an emergency hotline: 988 (US) or your local emergency services."
-    else:
-        reply = (
-            "I hear you. Thank you for sharing this. "
-            "Would you like grounding tips, reflective questions, or to continue venting?"
-        )
-        
-        if gemini_client:
-            try:
-                # Get last 10 messages before the current one to build history
-                past_messages = db.exec(
-                    select(ChatMessage)
-                    .where(ChatMessage.session_id == session_id)
-                    .order_by(ChatMessage.created_at.desc())
-                    .limit(10)
-                ).all()
-                
-                past_messages.reverse()
-                
-                history = []
-                for msg in past_messages:
-                    role = "user" if msg.sender_label == "seeker" else "model"
-                    # skip system messages if any, or map them to model
-                    if msg.sender_label == "system":
-                        continue
-                    history.append({"role": role, "parts": [msg.content]})
-                    
-                sys_instruct = (
-                    "You are HearU, a compassionate AI emotional support companion created to help people through difficult moments. \n\n"
-                    "Guidelines:\n"
-                    "- Listen with deep empathy and validate feelings\n"
-                    "- Offer gentle coping strategies (breathing exercises, grounding techniques, journaling prompts)\n"
-                    "- Keep responses warm, concise (2-3 sentences), and supportive\n"
-                    "- You are NOT a therapist or medical professional - remind users to seek professional help for serious issues\n"
-                    "- Never diagnose conditions, prescribe medication, or provide medical advice\n"
-                    "- If someone mentions self-harm or suicide, immediately provide crisis resources (988 Lifeline)\n"
-                    "- Remember context from the conversation to provide continuity\n"
-                    "- Use the person's emotional state to guide your response tone\n"
-                    "- Suggest professional resources when appropriate"
-                )
-                
-                contents = []
-                for msg in history:
-                    contents.append(genai.types.Content(
-                        role=msg["role"],
-                        parts=[genai.types.Part(text=msg["parts"][0])]
-                    ))
-                contents.append(genai.types.Content(
-                    role="user",
-                    parts=[genai.types.Part(text=payload.content)]
-                ))
-                
-                response = gemini_client.models.generate_content(
-                    model="gemini-2.5-flash-preview-05-20",
-                    contents=contents,
-                    config=genai.types.GenerateContentConfig(
-                        system_instruction=sys_instruct,
-                        max_output_tokens=256,
-                    ),
-                )
-                reply = response.text
-            except Exception as e:
-                print(f"Gemini API error: {e}")
+    givers = db.exec(query).all()
+    if not givers:
+        return None
+    if cause:
+        for giver in givers:
+            profile = db.exec(select(GiverProfile).where(GiverProfile.user_id == giver.id)).first()
+            if profile and profile.topics and cause.lower() in profile.topics.lower():
+                return giver
+    return random.choice(givers)
 
-    ai_response = ChatMessage(
-        session_id=session_id,
-        sender_user_id=None,
-        sender_label="ai_bot" if not crisis_detected else "system",
-        content=reply,
+
+@app.post("/sessions/request", response_model=ChatSessionRead)
+def request_session(
+    payload: SessionRequest,
+    user: User = Depends(require_role(Role.SEEKER)),
+    db: Session = Depends(get_session),
+):
+    giver = auto_match_giver(db, payload.cause)
+    session = ChatSession(
+        seeker_id=user.id,
+        giver_id=giver.id if giver else None,
+        cause=payload.cause,
+        status=SessionStatus.ACTIVE if giver else SessionStatus.REQUESTED,
+        is_ai=False,
     )
-    db.add(ai_response)
+    db.add(session)
     db.commit()
+    db.refresh(session)
+    return session
 
-    return {"reply": reply, "crisis_detected": crisis_detected}
 
-
-@app.post("/sessions/{session_id}/mood")
-def add_mood(
-    session_id: int,
-    payload: MoodCreate,
+@app.post("/sessions/request-ai", response_model=ChatSessionRead)
+def request_ai_session(
+    payload: SessionRequest,
     user: User = Depends(current_user),
     db: Session = Depends(get_session),
 ):
-    chat_session = db.get(ChatSession, session_id)
-    if not chat_session:
-        raise HTTPException(status_code=404, detail="Session not found")
-        
-    if payload.mood_before < 1 or payload.mood_before > 5:
-        raise HTTPException(status_code=400, detail="Mood rating must be 1-5")
-    if payload.mood_after is not None and (payload.mood_after < 1 or payload.mood_after > 5):
-        raise HTTPException(status_code=400, detail="Mood rating must be 1-5")
-
-    mood = db.exec(
-        select(MoodRating)
-        .where(MoodRating.session_id == session_id)
-        .where(MoodRating.user_id == user.id)
-    ).first()
-    
-    if mood:
-        mood.mood_before = payload.mood_before
-        mood.mood_after = payload.mood_after
-    else:
-        mood = MoodRating(
-            session_id=session_id,
-            user_id=user.id,
-            mood_before=payload.mood_before,
-            mood_after=payload.mood_after
-        )
-    db.add(mood)
+    session = ChatSession(
+        seeker_id=user.id,
+        giver_id=None,
+        cause=payload.cause,
+        status=SessionStatus.ACTIVE,
+        is_ai=True,
+    )
+    db.add(session)
     db.commit()
-    db.refresh(mood)
-    return mood
+    db.refresh(session)
+    return session
 
 
-@app.get("/sessions/{session_id}/mood")
-def get_mood(
-    session_id: int,
+@app.get("/sessions/active", response_model=List[ChatSessionRead])
+def get_active_sessions(
     user: User = Depends(current_user),
     db: Session = Depends(get_session),
 ):
-    moods = db.exec(
-        select(MoodRating)
-        .where(MoodRating.session_id == session_id)
-    ).all()
-    return moods
+    query = select(ChatSession).where(
+        ChatSession.status == SessionStatus.ACTIVE,
+        (ChatSession.seeker_id == user.id) | (ChatSession.giver_id == user.id),
+    )
+    return db.exec(query).all()
 
 
-@app.get("/analytics/sessions")
-def get_sessions_analytics(db: Session = Depends(get_session)):
-    total_sessions = db.exec(select(func.count(ChatSession.id))).one()
-    avg_rating = db.exec(select(func.avg(Feedback.rating))).one() or 0.0
-    
-    moods = db.exec(
-        select(MoodRating)
-        .where(MoodRating.mood_after != None)
-    ).all()
-    
-    mood_improvement = 0.0
-    if moods:
-        total_diff = sum(m.mood_after - m.mood_before for m in moods if m.mood_after is not None)
-        mood_improvement = total_diff / len(moods)
-        
-    return {
-        "total_sessions": total_sessions,
-        "avg_rating": float(avg_rating),
-        "avg_mood_improvement": float(mood_improvement)
-    }
-
-@app.get("/analytics/givers/leaderboard")
-def get_givers_leaderboard(db: Session = Depends(get_session)):
-    sessions = db.exec(select(ChatSession).where(ChatSession.giver_id != None)).all()
-    feedbacks = db.exec(select(Feedback)).all()
-    
-    giver_stats = {}
-    for s in sessions:
-        if s.giver_id not in giver_stats:
-            giver_stats[s.giver_id] = {"session_count": 0, "ratings": []}
-        giver_stats[s.giver_id]["session_count"] += 1
-        
-    for f in feedbacks:
-        s = db.get(ChatSession, f.session_id)
-        if s and s.giver_id:
-            if s.giver_id not in giver_stats:
-                giver_stats[s.giver_id] = {"session_count": 0, "ratings": []}
-            giver_stats[s.giver_id]["ratings"].append(f.rating)
-            
-    leaderboard = []
-    for g_id, stats in giver_stats.items():
-        avg_rating = sum(stats["ratings"]) / len(stats["ratings"]) if stats["ratings"] else 0.0
-        leaderboard.append({
-            "giver_id": g_id,
-            "session_count": stats["session_count"],
-            "avg_rating": avg_rating
-        })
-        
-    leaderboard.sort(key=lambda x: (x["avg_rating"], x["session_count"]), reverse=True)
-    return leaderboard
-
-
-@app.get("/sessions/{session_id}/messages")
-def list_messages(
-    session_id: int,
-    limit: int = 50,
-    offset: int = 0,
-    user: User = Depends(current_user),
+@app.get("/sessions/pending", response_model=List[ChatSessionRead])
+def get_pending_sessions(
+    user: User = Depends(require_role(Role.GIVER)),
     db: Session = Depends(get_session),
 ):
-    chat_session = db.get(ChatSession, session_id)
-    if not chat_session:
-        raise HTTPException(status_code=404, detail="Session not found")
-
-    if user.id not in [chat_session.seeker_id, chat_session.giver_id]:
-        raise HTTPException(status_code=403, detail="Not authorized")
-
-    messages = db.exec(
-        select(ChatMessage)
-        .where(ChatMessage.session_id == session_id)
-        .order_by(ChatMessage.created_at)
-        .offset(offset)
-        .limit(limit)
-    ).all()
-    
-    aliases = ["Blue Penguin", "Gentle Cloud", "Happy Tiger", "Silver Fox", "Golden Eagle"]
-    def get_alias(u_id: int):
-        return aliases[u_id % len(aliases)]
-        
-    are_friends = False
-    if not chat_session.is_ai_session and chat_session.giver_id:
-        other_id = chat_session.giver_id if user.id == chat_session.seeker_id else chat_session.seeker_id
-        fr = db.exec(
-            select(FriendRequest).where(
-                (((FriendRequest.sender_id == user.id) & (FriendRequest.receiver_id == other_id)) | \
-                 ((FriendRequest.sender_id == other_id) & (FriendRequest.receiver_id == user.id))) & \
-                (FriendRequest.status == "accepted")
-            )
-        ).first()
-        if fr:
-            are_friends = True
-
-    response_messages = []
-    for msg in messages:
-        msg_dict = msg.model_dump() if hasattr(msg, 'model_dump') else msg.dict()
-        if msg.sender_user_id is not None:
-            if msg.sender_user_id == user.id or are_friends:
-                msg_dict["sender_alias"] = None
-            else:
-                msg_dict["sender_user_id"] = None
-                msg_dict["sender_alias"] = get_alias(msg.sender_user_id)
-        else:
-            msg_dict["sender_alias"] = "AI"
-        response_messages.append(msg_dict)
-    
-    return response_messages
+    query = select(ChatSession).where(ChatSession.status == SessionStatus.REQUESTED)
+    return db.exec(query).all()
 
 
-@app.post("/sessions/{session_id}/end")
+@app.post("/sessions/{session_id}/accept", response_model=ChatSessionRead)
+def accept_session(
+    session_id: int,
+    user: User = Depends(require_role(Role.GIVER)),
+    db: Session = Depends(get_session),
+):
+    session = db.get(ChatSession, session_id)
+    if not session or session.status != SessionStatus.REQUESTED:
+        raise HTTPException(status_code=404, detail="Session not available")
+    session.giver_id = user.id
+    session.status = SessionStatus.ACTIVE
+    db.add(session)
+    db.commit()
+    db.refresh(session)
+    return session
+
+
+@app.post("/sessions/{session_id}/end", response_model=ChatSessionRead)
 def end_session(
     session_id: int,
     user: User = Depends(current_user),
     db: Session = Depends(get_session),
 ):
-    chat_session = db.get(ChatSession, session_id)
-    if not chat_session:
+    session = db.get(ChatSession, session_id)
+    if not session:
         raise HTTPException(status_code=404, detail="Session not found")
-
-    if user.id not in [chat_session.seeker_id, chat_session.giver_id]:
-        raise HTTPException(status_code=403, detail="Not authorized")
-
-    chat_session.status = SessionStatus.CLOSED
-    chat_session.ended_at = datetime.utcnow()
-    db.add(chat_session)
+    if session.seeker_id != user.id and session.giver_id != user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    session.status = SessionStatus.ENDED
+    session.ended_at = datetime.utcnow()
+    db.add(session)
     db.commit()
-    return {"success": True}
+    db.refresh(session)
+    return session
 
 
-@app.post("/feedback/{session_id}")
+@app.post("/sessions/{session_id}/messages", response_model=ChatMessageRead)
+def send_message(
+    session_id: int,
+    payload: ChatMessageCreate,
+    user: User = Depends(current_user),
+    db: Session = Depends(get_session),
+):
+    session = db.get(ChatSession, session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if session.status != SessionStatus.ACTIVE:
+        raise HTTPException(status_code=400, detail="Session not active")
+    if session.seeker_id != user.id and session.giver_id != user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    msg = ChatMessage(session_id=session_id, sender_id=user.id, content=payload.content)
+    db.add(msg)
+    db.commit()
+    db.refresh(msg)
+    return msg
+
+
+@app.get("/sessions/{session_id}/messages", response_model=List[ChatMessageRead])
+def get_messages(
+    session_id: int,
+    user: User = Depends(current_user),
+    db: Session = Depends(get_session),
+):
+    session = db.get(ChatSession, session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if session.seeker_id != user.id and session.giver_id != user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    query = select(ChatMessage).where(ChatMessage.session_id == session_id).order_by(ChatMessage.created_at)
+    return db.exec(query).all()
+
+
+@app.post("/sessions/{session_id}/feedback")
 def submit_feedback(
     session_id: int,
     payload: FeedbackCreate,
     user: User = Depends(current_user),
     db: Session = Depends(get_session),
 ):
-    if payload.rating < 1 or payload.rating > 5:
-        raise HTTPException(status_code=400, detail="Rating must be between 1 and 5")
-
-    chat_session = db.get(ChatSession, session_id)
-    if not chat_session:
+    session = db.get(ChatSession, session_id)
+    if not session:
         raise HTTPException(status_code=404, detail="Session not found")
-
-    feedback = Feedback(
-        session_id=session_id,
-        submitted_by_user_id=user.id,
-        rating=payload.rating,
-        comment=payload.comment,
-    )
+    if session.seeker_id != user.id and session.giver_id != user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    feedback = Feedback(session_id=session_id, user_id=user.id, **payload.model_dump())
     db.add(feedback)
     db.commit()
-    return {"success": True}
+    return {"status": "received"}
 
 
 @app.post("/reports")
-def create_report(
+def submit_report(
     payload: ReportCreate,
     user: User = Depends(current_user),
     db: Session = Depends(get_session),
 ):
-    report = Report(
-        session_id=payload.session_id,
-        reported_by_user_id=user.id,
-        reason=payload.reason,
-        details=payload.details,
-    )
+    report = Report(reporter_id=user.id, **payload.model_dump())
     db.add(report)
     db.commit()
-    return {"success": True}
+    return {"status": "reported"}
 
 
 @app.post("/friends/request")
-def send_friend_request(
+def create_friend_request(
     payload: FriendRequestCreate,
     user: User = Depends(current_user),
     db: Session = Depends(get_session),
 ):
-    chat_session = db.get(ChatSession, payload.session_id)
-    if not chat_session:
-        raise HTTPException(status_code=404, detail="Session not found")
-        
-    if user.id not in [chat_session.seeker_id, chat_session.giver_id]:
-        raise HTTPException(status_code=403, detail="Not part of this session")
-        
-    if payload.receiver_id not in [chat_session.seeker_id, chat_session.giver_id] or payload.receiver_id == user.id:
-        raise HTTPException(status_code=400, detail="Invalid receiver")
-
-    existing = db.exec(
-        select(FriendRequest).where(
-            (FriendRequest.sender_id == user.id) & (FriendRequest.receiver_id == payload.receiver_id)
-        )
-    ).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Request already sent")
-        
-    fr = FriendRequest(sender_id=user.id, receiver_id=payload.receiver_id, session_id=payload.session_id)
-    db.add(fr)
+    if user.id == payload.receiver_id:
+        raise HTTPException(status_code=400, detail="Cannot friend yourself")
+    req = FriendRequest(sender_id=user.id, receiver_id=payload.receiver_id)
+    db.add(req)
     db.commit()
-    return {"success": True, "request_id": fr.id}
+    return {"status": "requested"}
 
 
-@app.put("/friends/{request_id}/respond")
-def respond_friend_request(
+@app.post("/friends/accept/{request_id}")
+def accept_friend_request(
     request_id: int,
-    payload: FriendRequestRespond,
     user: User = Depends(current_user),
     db: Session = Depends(get_session),
 ):
-    if payload.status not in ["accepted", "rejected"]:
-        raise HTTPException(status_code=400, detail="Invalid status")
-        
-    fr = db.get(FriendRequest, request_id)
-    if not fr or fr.receiver_id != user.id:
+    req = db.get(FriendRequest, request_id)
+    if not req or req.receiver_id != user.id:
         raise HTTPException(status_code=404, detail="Request not found")
-        
-    fr.status = payload.status
-    db.add(fr)
+    req.status = "accepted"
+    db.add(req)
     db.commit()
-    return {"success": True}
+    return {"status": "accepted"}
 
 
-@app.get("/friends")
-def list_friends(user: User = Depends(current_user), db: Session = Depends(get_session)):
-    requests = db.exec(
-        select(FriendRequest).where(
-            ((FriendRequest.sender_id == user.id) | (FriendRequest.receiver_id == user.id)) & \
-            (FriendRequest.status == "accepted")
-        )
+@app.get("/friends", response_model=List[UserRead])
+def list_friends(
+    user: User = Depends(current_user),
+    db: Session = Depends(get_session),
+):
+    sent = db.exec(
+        select(User)
+        .join(FriendRequest, FriendRequest.receiver_id == User.id)
+        .where(FriendRequest.sender_id == user.id, FriendRequest.status == "accepted")
     ).all()
-    
-    friends = []
-    for r in requests:
-        friend_id = r.receiver_id if r.sender_id == user.id else r.sender_id
-        friends.append({"friend_id": friend_id, "session_id": r.session_id})
-        
-    return friends
+    received = db.exec(
+        select(User)
+        .join(FriendRequest, FriendRequest.sender_id == User.id)
+        .where(FriendRequest.receiver_id == user.id, FriendRequest.status == "accepted")
+    ).all()
+    return list(set(sent + received))
 
 
-@app.post("/subscriptions/upgrade")
-def upgrade_to_premium(user: User = Depends(current_user), db: Session = Depends(get_session)):
-    """Upgrade user to premium tier (verified listeners, priority matching)"""
-    user.is_premium = True
-    db.add(user)
+@app.post("/moods", response_model=MoodRatingRead)
+def submit_mood_rating(
+    payload: MoodRatingCreate,
+    user: User = Depends(current_user),
+    db: Session = Depends(get_session),
+):
+    mood = MoodRating(user_id=user.id, **payload.model_dump())
+    db.add(mood)
     db.commit()
-    return {"success": True, "tier": "premium", "message": "Welcome to HearU Premium!"}
+    db.refresh(mood)
+    return mood
 
-@app.get("/subscriptions/status")
-def subscription_status(user: User = Depends(current_user)):
-    """Check user's subscription status"""
-    return {
-        "is_premium": getattr(user, 'is_premium', False),
-        "tier": "premium" if getattr(user, 'is_premium', False) else "free",
-        "features": {
-            "verified_listeners": getattr(user, 'is_premium', False),
-            "priority_matching": getattr(user, 'is_premium', False),
-            "session_history": True,
-            "ai_support": True,
-            "crisis_support": True
+
+@app.get("/moods/history", response_model=List[MoodRatingRead])
+def get_mood_history(
+    user: User = Depends(current_user),
+    db: Session = Depends(get_session),
+):
+    query = select(MoodRating).where(MoodRating.user_id == user.id).order_by(MoodRating.created_at.desc())
+    return db.exec(query).all()
+
+
+@app.get("/moods/average")
+def get_average_mood(
+    user: User = Depends(current_user),
+    db: Session = Depends(get_session),
+):
+    query = select(func.avg(MoodRating.rating)).where(MoodRating.user_id == user.id)
+    avg_score = db.exec(query).first()
+    return {"average_score": avg_score or 0.0}
+
+
+@app.get("/crisis/resources")
+def get_crisis_resources():
+    return [
+        {
+            "name": "National Suicide Prevention Lifeline",
+            "contact": "988",
+            "description": "24/7, free and confidential support for people in distress.",
+            "type": "phone",
+        },
+        {
+            "name": "Crisis Text Line",
+            "contact": "Text HOME to 741741",
+            "description": "Free, 24/7 crisis support via text message.",
+            "type": "text",
+        },
+        {
+            "name": "The Trevor Project",
+            "contact": "1-866-488-7386",
+            "description": "Crisis intervention and suicide prevention services to LGBTQ young people.",
+            "type": "phone",
+        },
+        {
+            "name": "Veterans Crisis Line",
+            "contact": "Dial 988 then press 1",
+            "description": "24/7 confidential crisis support for Veterans and their loved ones.",
+            "type": "phone",
         }
-    }
+    ]
 
 
-@app.websocket("/ws/chat/{session_id}")
-async def websocket_chat(websocket: WebSocket, session_id: int):
-    """WebSocket endpoint for real-time chat in a session"""
-    # Authenticate via query param token
-    token = websocket.query_params.get("token")
-    if not token:
-        await websocket.close(code=4001, reason="Missing token")
-        return
-    
-    try:
-        user_id = int(decode_access_token(token))
-    except Exception:
-        await websocket.close(code=4001, reason="Invalid token")
-        return
-    
-    with next(get_session()) as db:
-        user = db.get(User, user_id)
-        chat_session = db.get(ChatSession, session_id)
-        
-        if not user or not chat_session:
-            await websocket.close(code=4004, reason="Not found")
-            return
-        
-        if user.id not in [chat_session.seeker_id, chat_session.giver_id]:
-            await websocket.close(code=4003, reason="Not authorized")
-            return
-    
-    await manager.connect(websocket, session_id)
-    
-    try:
-        while True:
-            data = await websocket.receive_json()
-            content = data.get("content", "").strip()
-            if not content:
-                continue
-            
-            with next(get_session()) as db:
-                user = db.get(User, user_id)
-                chat_session = db.get(ChatSession, session_id)
-                sender_label = "seeker" if user.id == chat_session.seeker_id else "giver"
-                
-                message = ChatMessage(
-                    session_id=session_id,
-                    sender_user_id=user.id,
-                    sender_label=sender_label,
-                    content=content,
-                )
-                db.add(message)
-                db.commit()
-                db.refresh(message)
-                
-                # Check for crisis keywords
-                crisis_detected = False
-                crisis_keywords = ["suicide", "kill myself", "end my life", "self-harm", 
-                                   "want to die", "hurt myself", "no reason to live"]
-                content_lower = content.lower()
-                for keyword in crisis_keywords:
-                    if keyword in content_lower:
-                        crisis_detected = True
-                        break
-                
-                broadcast_msg = {
-                    "type": "message",
-                    "id": message.id,
-                    "sender_label": sender_label,
-                    "content": content,
-                    "created_at": str(message.created_at),
-                    "crisis_detected": crisis_detected,
-                }
-                
-                await manager.broadcast_to_session(session_id, broadcast_msg)
-                
-                if crisis_detected:
-                    crisis_msg = {
-                        "type": "crisis_alert",
-                        "content": "If you are in crisis, please reach out immediately:\n988 Suicide & Crisis Lifeline\nCrisis Text Line: Text HOME to 741741",
-                        "sender_label": "system",
-                    }
-                    await manager.broadcast_to_session(session_id, crisis_msg)
-    
-    except WebSocketDisconnect:
-        manager.disconnect(websocket, session_id)
+active_connections: Dict[int, List[WebSocket]] = {}
 
 
-@app.websocket("/ws/notifications")
-async def websocket_notifications(websocket: WebSocket):
-    """WebSocket for real-time notifications (new sessions, friend requests)"""
-    token = websocket.query_params.get("token")
-    if not token:
-        await websocket.close(code=4001)
-        return
-    
-    try:
-        user_id = int(decode_access_token(token))
-    except Exception:
-        await websocket.close(code=4001)
-        return
-    
+@app.websocket("/ws/{session_id}")
+async def websocket_endpoint(
+    websocket: WebSocket,
+    session_id: int,
+    token: str | None = None,
+    db: Session = Depends(get_session),
+):
     await websocket.accept()
-    giver_connections[user_id] = websocket
-    
+    if not token:
+        await websocket.send_json({"type": "error", "message": "Authentication required"})
+        await websocket.close(code=1008)
+        return
+    user = get_user_from_token(token, db)
+    if not user:
+        await websocket.send_json({"type": "error", "message": "Invalid token"})
+        await websocket.close(code=1008)
+        return
+
+    session = db.get(ChatSession, session_id)
+    if not session or (session.seeker_id != user.id and session.giver_id != user.id):
+        await websocket.send_json({"type": "error", "message": "Unauthorized for session"})
+        await websocket.close(code=1008)
+        return
+
+    if session_id not in active_connections:
+        active_connections[session_id] = []
+    active_connections[session_id].append(websocket)
+
     try:
         while True:
-            await websocket.receive_text()  # Keep alive
+            data = await websocket.receive_text()
+            if data.startswith("{") and data.endswith("}"):
+                import json
+                try:
+                    parsed = json.loads(data)
+                    msg_type = parsed.get("type")
+                    if msg_type == "typing":
+                        for conn in active_connections[session_id]:
+                            if conn != websocket:
+                                await conn.send_json({"type": "typing", "user_id": user.id})
+                        continue
+                    elif msg_type == "read":
+                        continue
+                except Exception:
+                    pass
+
+            msg = ChatMessage(session_id=session_id, sender_id=user.id, content=data)
+            db.add(msg)
+            db.commit()
+            db.refresh(msg)
+
+            for conn in active_connections[session_id]:
+                await conn.send_json({
+                    "id": msg.id,
+                    "session_id": session_id,
+                    "sender_id": user.id,
+                    "content": msg.content,
+                    "created_at": msg.created_at.isoformat(),
+                })
     except WebSocketDisconnect:
-        giver_connections.pop(user_id, None)
+        active_connections[session_id].remove(websocket)
+        if not active_connections[session_id]:
+            del active_connections[session_id]
+
+
+@app.post("/sessions/{session_id}/ai-message", response_model=ChatMessageRead)
+def generate_ai_reply(
+    session_id: int,
+    user: User = Depends(current_user),
+    db: Session = Depends(get_session),
+):
+    session = db.get(ChatSession, session_id)
+    if not session or not session.is_ai:
+        raise HTTPException(status_code=400, detail="Not an active AI session")
+    if session.seeker_id != user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    messages = db.exec(
+        select(ChatMessage).where(ChatMessage.session_id == session_id).order_by(ChatMessage.created_at)
+    ).all()
+
+    conversation_history = "\n".join(
+        [f"{'Seeker' if m.sender_id == user.id else 'AI'}: {m.content}" for m in messages]
+    )
+
+    prompt = (
+        "You are an empathetic, compassionate, and supportive emotional listener in an app called HearU. "
+        "Your goal is to validate the user's feelings, offer comfort, and provide non-judgmental support. "
+        "Do not offer medical advice. If the user appears in crisis, kindly remind them of professional help.\n\n"
+        f"Conversation so far:\n{conversation_history}\n\nAI Response:"
+    )
+
+    api_key = os.getenv("GEMINI_API_KEY")
+    if api_key:
+        try:
+            client = genai.Client(api_key=api_key)
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=prompt,
+            )
+            ai_text = response.text
+        except Exception:
+            ai_text = "I'm here for you and I'm listening. Please tell me more about how you're feeling."
+    else:
+        ai_text = "I'm here for you and I'm listening. Please tell me more about how you're feeling."
+
+    ai_msg = ChatMessage(session_id=session_id, sender_id=None, content=ai_text)
+    db.add(ai_msg)
+    db.commit()
+    db.refresh(ai_msg)
+    return ai_msg
