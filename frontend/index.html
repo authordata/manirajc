@@ -1,67 +1,956 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>HearU — Home</title>
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-    <div class="app-shell">
-      <header class="hero">
-        <div class="brand-row">
-          <span class="logo-pill">💜 HearU</span>
-          <span class="status-pill" id="authState">Not logged in</span>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HearU - Emotional Support Platform</title>
+    <style>
+        :root {
+            --primary: #00897B;
+            --secondary: #7E57C2;
+            --bg-color: #f5f7fa;
+            --text-color: #333333;
+            --card-bg: #ffffff;
+            --border: #e0e0e0;
+            --sent-msg: #00897B;
+            --sent-msg-text: #ffffff;
+            --recv-msg: #e0e0e0;
+            --recv-msg-text: #333333;
+            --error: #d32f2f;
+            --success: #388e3c;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #121212;
+            --text-color: #f5f5f5;
+            --card-bg: #1e1e1e;
+            --border: #333333;
+            --recv-msg: #333333;
+            --recv-msg-text: #f5f5f5;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            margin: 0;
+            cursor: pointer;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: opacity 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+        
+        .btn-secondary {
+            background-color: var(--secondary);
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid white;
+        }
+        
+        .btn-danger {
+            background-color: var(--error);
+        }
+
+        .container {
+            flex: 1;
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+            border: 1px solid var(--border);
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background-color: var(--card-bg);
+            color: var(--text-color);
+        }
+
+        .view {
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+            flex: 1;
+        }
+
+        .view.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .session-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .session-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            background-color: var(--primary);
+            color: white;
+            align-self: flex-start;
+        }
+
+        /* Chat Interface */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 150px);
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .chat-header {
+            padding: 1rem;
+            background-color: var(--border);
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .message {
+            max-width: 70%;
+            padding: 0.75rem 1rem;
+            border-radius: 1rem;
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
+
+        .message.sent {
+            align-self: flex-end;
+            background-color: var(--sent-msg);
+            color: var(--sent-msg-text);
+            border-bottom-right-radius: 0.25rem;
+        }
+
+        .message.received {
+            align-self: flex-start;
+            background-color: var(--recv-msg);
+            color: var(--recv-msg-text);
+            border-bottom-left-radius: 0.25rem;
+        }
+
+        .chat-input {
+            display: flex;
+            padding: 1rem;
+            border-top: 1px solid var(--border);
+            gap: 0.5rem;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        /* Toast Notifications */
+        #toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .toast {
+            padding: 1rem;
+            margin-top: 0.5rem;
+            border-radius: 4px;
+            color: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            animation: slideIn 0.3s ease-in-out;
+            min-width: 250px;
+        }
+
+        .toast.success { background-color: var(--success); }
+        .toast.error { background-color: var(--error); }
+        .toast.info { background-color: var(--secondary); }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Modals and Overlays */
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        
+        .overlay.active {
+            display: flex;
+        }
+
+        .modal-dialog {
+            background-color: var(--card-bg);
+            padding: 2rem;
+            border-radius: 8px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            border-top: 5px solid var(--primary);
+        }
+        
+        .crisis-dialog {
+            border-top: 5px solid var(--error);
+        }
+
+        .mood-picker {
+            display: flex;
+            justify-content: space-around;
+            font-size: 2.5rem;
+            margin: 1.5rem 0;
+        }
+        
+        .mood-emoji {
+            cursor: pointer;
+            transition: transform 0.1s;
+            opacity: 0.7;
+        }
+        .mood-emoji:hover, .mood-emoji.selected { 
+            transform: scale(1.2); 
+            opacity: 1;
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 1rem;
+        }
+        .tab {
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+        }
+        .tab.active {
+            border-bottom: 2px solid var(--primary);
+            font-weight: bold;
+        }
+        
+        .nav-links {
+            display: none;
+            gap: 1rem;
+        }
+        .nav-links.active {
+            display: flex;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <h1 onclick="showDashboard()">HearU</h1>
+        <div class="controls">
+            <button class="btn btn-outline" id="theme-toggle" onclick="toggleTheme()">🌙</button>
+            <div id="user-nav" class="nav-links">
+                <span id="user-name"></span>
+                <button class="btn btn-outline" onclick="logout()">Logout</button>
+            </div>
         </div>
-        <h1>A safe space to be heard.</h1>
-        <p>Choose human support or private AI support — whenever you need it.</p>
-      </header>
+    </header>
 
-      <nav class="top-nav">
-        <a class="active" href="index.html">Home</a>
-        <a href="chat.html">Chat</a>
-        <a href="settings.html">Settings</a>
-        <a href="profile.html">Profile</a>
-      </nav>
+    <div id="toast-container"></div>
 
-      <main class="grid">
-        <section class="card">
-          <h2>Create account</h2>
-          <p class="muted">Start as a seeker or a support giver.</p>
-          <input id="email" placeholder="Email" />
-          <input id="password" type="password" placeholder="Password" />
-          <input id="displayName" placeholder="Display Name" />
-          <select id="role">
-            <option value="support_seeker">I Need Support</option>
-            <option value="support_giver">I Want to Offer Support</option>
-          </select>
-          <button id="registerBtn">Create HearU Account</button>
-        </section>
+    <div class="container">
+        <!-- Auth View -->
+        <div id="auth-view" class="view active">
+            <div class="card" style="max-width: 500px; margin: 0 auto; width: 100%;">
+                <div class="tabs">
+                    <div class="tab active" onclick="switchAuthTab('login')">Login</div>
+                    <div class="tab" onclick="switchAuthTab('register')">Register</div>
+                </div>
+                
+                <form id="auth-form" onsubmit="handleAuth(event)">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="password" required>
+                    </div>
+                    
+                    <div id="register-fields" style="display: none;">
+                        <div class="form-group">
+                            <label>Display Name (Anonymous)</label>
+                            <input type="text" id="display_name">
+                        </div>
+                        <div class="form-group">
+                            <label>Role</label>
+                            <select id="role">
+                                <option value="seeker">Seeker</option>
+                                <option value="giver">Giver</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn" style="width: 100%; margin-top: 1rem;" id="auth-btn">Login</button>
+                </form>
+            </div>
+        </div>
 
-        <section class="card">
-          <h2>Login</h2>
-          <p class="muted">Continue your journey.</p>
-          <input id="loginEmail" placeholder="Email" />
-          <input id="loginPassword" type="password" placeholder="Password" />
-          <button id="loginBtn">Login</button>
-          <p id="flashMessage" class="flash"></p>
-        </section>
+        <!-- Seeker Dashboard View -->
+        <div id="seeker-dashboard" class="view">
+            <h2>Seeker Dashboard</h2>
+            <p style="margin-bottom: 2rem;">How are you feeling today?</p>
+            
+            <div class="dashboard-grid">
+                <div class="card">
+                    <h3>Talk to AI Support</h3>
+                    <p style="margin: 1rem 0;">Get immediate, judgment-free support from our trained AI listener.</p>
+                    <div class="form-group">
+                        <input type="text" id="ai-cause" placeholder="What's on your mind?">
+                    </div>
+                    <button class="btn" onclick="startSession('ai')">Start AI Session</button>
+                </div>
+                
+                <div class="card">
+                    <h3>Talk to a Human</h3>
+                    <p style="margin: 1rem 0;">Connect anonymously with a caring listener who understands.</p>
+                    <div class="form-group">
+                        <input type="text" id="human-cause" placeholder="What would you like to talk about?">
+                    </div>
+                    <button class="btn btn-secondary" onclick="startSession('human')">Request Connection</button>
+                </div>
+            </div>
+            
+            <h3 style="margin-top: 2rem; margin-bottom: 1rem;">Active Sessions</h3>
+            <div class="dashboard-grid" id="seeker-active-sessions">
+                <!-- Populated via JS -->
+            </div>
+        </div>
 
-        <section class="card card-wide">
-          <h2>Support dashboard</h2>
-          <p class="muted">Pick a support mode and start talking.</p>
+        <!-- Giver Dashboard View -->
+        <div id="giver-dashboard" class="view">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h2>Giver Dashboard</h2>
+                <div>
+                    <label style="margin-right: 0.5rem;">Available to listen:</label>
+                    <button class="btn" id="availability-btn" onclick="toggleAvailability()">Set Available</button>
+                </div>
+            </div>
+            
+            <h3 style="margin-bottom: 1rem;">Pending Requests</h3>
+            <div class="dashboard-grid" id="pending-requests" style="margin-bottom: 2rem;">
+                <!-- Populated via JS -->
+            </div>
+            
+            <h3 style="margin-bottom: 1rem;">Active Sessions</h3>
+            <div class="dashboard-grid" id="giver-active-sessions">
+                <!-- Populated via JS -->
+            </div>
+        </div>
 
-          <div class="actions">
-            <button id="requestHumanBtn" class="btn-secondary">Connect with Support Giver</button>
-            <button id="requestAiBtn">Talk to HearU AI</button>
-          </div>
-
-          <p id="sessionResult" class="session"></p>
-          <a class="inline-link" href="chat.html">Open full chat page →</a>
-        </section>
-      </main>
+        <!-- Chat View -->
+        <div id="chat-view" class="view">
+            <div class="chat-container">
+                <div class="chat-header">
+                    <div id="chat-title">Session</div>
+                    <div>
+                        <button class="btn btn-danger" onclick="endSessionPrompt()">End Session</button>
+                        <button class="btn btn-outline" onclick="showDashboard()">Back</button>
+                    </div>
+                </div>
+                <div class="chat-messages" id="chat-messages">
+                    <!-- Messages go here -->
+                </div>
+                <form class="chat-input" onsubmit="sendMessage(event)">
+                    <input type="text" id="message-input" placeholder="Type a message..." required autocomplete="off">
+                    <button type="submit" class="btn">Send</button>
+                </form>
+            </div>
+        </div>
     </div>
 
-    <script src="script.js"></script>
-  </body>
+    <!-- Mood Overlay -->
+    <div class="overlay" id="mood-overlay">
+        <div class="modal-dialog">
+            <h3>How are you feeling?</h3>
+            <div class="mood-picker">
+                <span class="mood-emoji" onclick="selectMood('😢')">😢</span>
+                <span class="mood-emoji" onclick="selectMood('😟')">😟</span>
+                <span class="mood-emoji" onclick="selectMood('😐')">😐</span>
+                <span class="mood-emoji" onclick="selectMood('🙂')">🙂</span>
+                <span class="mood-emoji" onclick="selectMood('😊')">😊</span>
+            </div>
+            <button class="btn" onclick="closeMoodOverlay()">Continue</button>
+        </div>
+    </div>
+
+    <!-- Crisis Overlay -->
+    <div class="overlay" id="crisis-overlay">
+        <div class="modal-dialog crisis-dialog">
+            <h2 style="color: var(--error); margin-bottom: 1rem;">Crisis Detected</h2>
+            <p style="margin-bottom: 1rem;">It sounds like you might be going through a very difficult time right now. You are not alone.</p>
+            <p style="margin-bottom: 2rem;">Please consider reaching out to a crisis helpline:</p>
+            <h3 style="margin-bottom: 0.5rem;">National Suicide Prevention Lifeline</h3>
+            <h2 style="margin-bottom: 2rem;">988</h2>
+            <div style="display: flex; gap: 1rem; justify-content: center;">
+                <a href="tel:988" class="btn btn-danger" style="text-decoration: none;">Call 988</a>
+                <button class="btn btn-outline" style="color: var(--text-color); border-color: var(--border);" onclick="closeCrisisOverlay()">I'm OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = window.location.origin; // Assume same-origin by default
+        
+        // State
+        let token = localStorage.getItem('token');
+        let currentUser = null;
+        let currentSessionId = null;
+        let chatInterval = null;
+        let dashboardInterval = null;
+        let isGiverAvailable = false;
+        let selectedMood = '';
+        let authMode = 'login'; // login or register
+
+        // Setup theme
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+
+        function toggleTheme() {
+            const current = document.documentElement.getAttribute('data-theme');
+            const target = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', target);
+            localStorage.setItem('theme', target);
+        }
+
+        // Toasts
+        function showToast(msg, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerText = msg;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Navigation
+        function showView(viewId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            
+            clearInterval(chatInterval);
+            clearInterval(dashboardInterval);
+            
+            if (viewId === 'chat-view') {
+                chatInterval = setInterval(fetchMessages, 3000);
+            } else if (viewId === 'giver-dashboard') {
+                dashboardInterval = setInterval(loadGiverDashboard, 5000);
+            } else if (viewId === 'seeker-dashboard') {
+                dashboardInterval = setInterval(loadSeekerActiveSessions, 5000);
+            }
+        }
+
+        function switchAuthTab(mode) {
+            authMode = mode;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            const btn = document.getElementById('auth-btn');
+            const regFields = document.getElementById('register-fields');
+            
+            if (mode === 'login') {
+                regFields.style.display = 'none';
+                btn.innerText = 'Login';
+            } else {
+                regFields.style.display = 'block';
+                btn.innerText = 'Register';
+            }
+        }
+
+        // API Helper
+        async function apiCall(endpoint, method = 'GET', body = null) {
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+            
+            try {
+                const options = { method, headers };
+                if (body) options.body = JSON.stringify(body);
+                
+                const res = await fetch(`${API_BASE_URL}${endpoint}`, options);
+                
+                if (res.status === 401) {
+                    logout();
+                    throw new Error('Unauthorized');
+                }
+                
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || 'API Error');
+                return data;
+            } catch (err) {
+                console.error('API Error:', err);
+                throw err;
+            }
+        }
+
+        // Auth
+        async function handleAuth(e) {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                if (authMode === 'login') {
+                    // Try OAuth2 form data first if standard FastAPI
+                    const formData = new URLSearchParams();
+                    formData.append('username', email); // OAuth2 expects username
+                    formData.append('password', password);
+                    
+                    const res = await fetch(`${API_BASE_URL}/auth/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: formData
+                    });
+                    
+                    if (!res.ok) {
+                        // Fallback to JSON if API expects JSON
+                        const jsonRes = await fetch(`${API_BASE_URL}/auth/login`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ email, password })
+                        });
+                        if (!jsonRes.ok) throw new Error('Login failed');
+                        const data = await jsonRes.json();
+                        token = data.access_token;
+                    } else {
+                        const data = await res.json();
+                        token = data.access_token;
+                    }
+                    
+                    localStorage.setItem('token', token);
+                    showToast('Logged in successfully', 'success');
+                    
+                } else {
+                    const display_name = document.getElementById('display_name').value;
+                    const role = document.getElementById('role').value;
+                    
+                    await apiCall('/auth/register', 'POST', {
+                        email, password, display_name, role, is_anonymous: true
+                    });
+                    
+                    showToast('Registered successfully! Please login.', 'success');
+                    switchAuthTab('login');
+                    return;
+                }
+                
+                await initApp();
+                
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        function logout() {
+            token = null;
+            currentUser = null;
+            localStorage.removeItem('token');
+            document.getElementById('user-nav').classList.remove('active');
+            showView('auth-view');
+            clearInterval(chatInterval);
+            clearInterval(dashboardInterval);
+        }
+
+        // Initialization
+        async function initApp() {
+            if (!token) return showView('auth-view');
+            
+            try {
+                currentUser = await apiCall('/users/me');
+                document.getElementById('user-name').innerText = currentUser.display_name || currentUser.email;
+                document.getElementById('user-nav').classList.add('active');
+                
+                showDashboard();
+            } catch (err) {
+                logout();
+            }
+        }
+
+        function showDashboard() {
+            if (!currentUser) return showView('auth-view');
+            
+            if (currentUser.role === 'giver') {
+                showView('giver-dashboard');
+                loadGiverDashboard();
+            } else {
+                showView('seeker-dashboard');
+                loadSeekerActiveSessions();
+            }
+        }
+
+        // Seeker Functions
+        async function startSession(type) {
+            const causeInputId = type === 'ai' ? 'ai-cause' : 'human-cause';
+            const cause = document.getElementById(causeInputId).value;
+            
+            document.getElementById('mood-overlay').classList.add('active');
+            
+            // Wait for mood selection before proceeding
+            window.continueSessionCreate = async () => {
+                try {
+                    const endpoint = type === 'ai' ? '/sessions/request-ai' : '/sessions/request';
+                    const session = await apiCall(endpoint, 'POST', { cause });
+                    
+                    document.getElementById(causeInputId).value = '';
+                    showToast(`${type.toUpperCase()} session started`, 'success');
+                    
+                    if (type === 'ai' || session.status === 'active') {
+                        openChat(session.id, type === 'ai' ? 'AI Support' : 'Anonymous Listener');
+                    } else {
+                        loadSeekerActiveSessions();
+                    }
+                } catch (err) {
+                    showToast(err.message, 'error');
+                }
+            };
+        }
+
+        async function loadSeekerActiveSessions() {
+            try {
+                const sessions = await apiCall('/sessions/active');
+                const container = document.getElementById('seeker-active-sessions');
+                container.innerHTML = '';
+                
+                if (sessions.length === 0) {
+                    container.innerHTML = '<p>No active sessions.</p>';
+                    return;
+                }
+                
+                sessions.forEach(s => {
+                    const el = document.createElement('div');
+                    el.className = 'session-card';
+                    el.onclick = () => openChat(s.id, s.is_ai ? 'AI Support' : 'Anonymous Listener');
+                    el.innerHTML = `
+                        <span class="badge">${s.status}</span>
+                        <h4>${s.is_ai ? 'AI Session' : 'Human Session'}</h4>
+                        <p style="font-size: 0.9rem; color: #666;">${s.cause || 'No specific topic'}</p>
+                    `;
+                    container.appendChild(el);
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // Giver Functions
+        async function loadGiverDashboard() {
+            try {
+                // Get availability status (mock check if no endpoint exists, handle gracefully)
+                try {
+                    const avail = await apiCall('/givers/availability');
+                    isGiverAvailable = avail.is_available;
+                    updateAvailabilityBtn();
+                } catch (e) {
+                    console.log('Availability endpoint missing or error');
+                }
+
+                // Load Pending Requests
+                const pending = await apiCall('/sessions/pending');
+                const pendingCont = document.getElementById('pending-requests');
+                pendingCont.innerHTML = pending.length ? '' : '<p>No pending requests.</p>';
+                
+                pending.forEach(r => {
+                    const el = document.createElement('div');
+                    el.className = 'session-card';
+                    el.innerHTML = `
+                        <span class="badge" style="background-color: var(--secondary)">Pending</span>
+                        <h4>Anonymous Seeker</h4>
+                        <p style="font-size: 0.9rem; margin: 0.5rem 0;">${r.cause || 'Needs someone to talk to'}</p>
+                        <button class="btn" onclick="acceptRequest('${r.id}')" style="margin-top: auto;">Accept Request</button>
+                    `;
+                    pendingCont.appendChild(el);
+                });
+
+                // Load Active Sessions
+                const active = await apiCall('/sessions/active');
+                const activeCont = document.getElementById('giver-active-sessions');
+                activeCont.innerHTML = active.length ? '' : '<p>No active sessions.</p>';
+                
+                active.forEach(s => {
+                    const el = document.createElement('div');
+                    el.className = 'session-card';
+                    el.onclick = () => openChat(s.id, 'Anonymous Seeker');
+                    el.innerHTML = `
+                        <span class="badge">Active</span>
+                        <h4>Anonymous Seeker</h4>
+                        <p style="font-size: 0.9rem;">${s.cause || 'Started conversation'}</p>
+                    `;
+                    activeCont.appendChild(el);
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function toggleAvailability() {
+            try {
+                await apiCall('/givers/toggle-availability', 'POST');
+                isGiverAvailable = !isGiverAvailable;
+                updateAvailabilityBtn();
+                showToast(isGiverAvailable ? 'You are now available' : 'You are now offline', 'success');
+            } catch (err) {
+                showToast('Could not update availability', 'error');
+            }
+        }
+
+        function updateAvailabilityBtn() {
+            const btn = document.getElementById('availability-btn');
+            btn.innerText = isGiverAvailable ? 'Set Offline' : 'Set Available';
+            btn.style.backgroundColor = isGiverAvailable ? 'var(--error)' : 'var(--success)';
+        }
+
+        async function acceptRequest(id) {
+            try {
+                await apiCall(`/sessions/${id}/accept`, 'POST');
+                showToast('Request accepted!', 'success');
+                openChat(id, 'Anonymous Seeker');
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        // Chat Functions
+        function openChat(id, title) {
+            currentSessionId = id;
+            document.getElementById('chat-title').innerText = title;
+            document.getElementById('chat-messages').innerHTML = '';
+            showView('chat-view');
+            fetchMessages();
+        }
+
+        async function fetchMessages() {
+            if (!currentSessionId) return;
+            try {
+                const messages = await apiCall(`/sessions/${currentSessionId}/messages`);
+                renderMessages(messages);
+            } catch (err) {
+                console.error('Failed to fetch messages');
+            }
+        }
+
+        function renderMessages(messages) {
+            const container = document.getElementById('chat-messages');
+            const shouldScroll = container.scrollTop + container.clientHeight >= container.scrollHeight - 50;
+            
+            container.innerHTML = '';
+            messages.forEach(m => {
+                const isSentByMe = m.sender_id === currentUser.id;
+                const el = document.createElement('div');
+                el.className = `message ${isSentByMe ? 'sent' : 'received'}`;
+                el.innerText = m.content;
+                container.appendChild(el);
+                
+                // Super basic client-side crisis detection for demo
+                const contentLower = m.content.toLowerCase();
+                if ((contentLower.includes('suicide') || contentLower.includes('kill myself')) && !isSentByMe) {
+                    showCrisisAlert();
+                }
+            });
+            
+            if (shouldScroll) {
+                container.scrollTop = container.scrollHeight;
+            }
+        }
+
+        async function sendMessage(e) {
+            e.preventDefault();
+            const input = document.getElementById('message-input');
+            const content = input.value.trim();
+            if (!content || !currentSessionId) return;
+            
+            input.value = '';
+            
+            try {
+                // Optimistic UI update
+                const container = document.getElementById('chat-messages');
+                const el = document.createElement('div');
+                el.className = 'message sent';
+                el.innerText = content;
+                container.appendChild(el);
+                container.scrollTop = container.scrollHeight;
+
+                await apiCall(`/sessions/${currentSessionId}/messages`, 'POST', { content });
+                
+                // If it's an AI session, we might need to trigger the AI response manually depending on backend impl.
+                // Assuming backend auto-replies or provides a specific endpoint:
+                try {
+                    const sessionInfo = await apiCall('/sessions/active');
+                    const isAi = sessionInfo.find(s => s.id === currentSessionId)?.is_ai;
+                    if (isAi) {
+                         await apiCall(`/sessions/${currentSessionId}/ai-message`, 'POST', { content });
+                    }
+                } catch(e) {} // ignore if endpoint doesn't exist
+                
+                fetchMessages();
+            } catch (err) {
+                showToast(err.message, 'error');
+                input.value = content; // restore
+            }
+        }
+
+        function endSessionPrompt() {
+            if(confirm('Are you sure you want to end this session?')) {
+                endSession();
+            }
+        }
+
+        async function endSession() {
+            try {
+                await apiCall(`/sessions/${currentSessionId}/end`, 'POST');
+                showToast('Session ended', 'info');
+                document.getElementById('mood-overlay').classList.add('active');
+                window.continueSessionCreate = () => {
+                    closeMoodOverlay();
+                    showDashboard();
+                };
+            } catch (err) {
+                showToast('Could not end session', 'error');
+                showDashboard();
+            }
+        }
+
+        // Mood and Crisis Handlers
+        function selectMood(emoji) {
+            document.querySelectorAll('.mood-emoji').forEach(e => e.classList.remove('selected'));
+            event.target.classList.add('selected');
+            selectedMood = emoji;
+        }
+
+        function closeMoodOverlay() {
+            document.getElementById('mood-overlay').classList.remove('active');
+            if (window.continueSessionCreate) {
+                window.continueSessionCreate();
+                window.continueSessionCreate = null;
+            }
+        }
+
+        function showCrisisAlert() {
+            document.getElementById('crisis-overlay').classList.add('active');
+        }
+
+        function closeCrisisOverlay() {
+            document.getElementById('crisis-overlay').classList.remove('active');
+        }
+
+        // Start App
+        initApp();
+    </script>
+</body>
 </html>
