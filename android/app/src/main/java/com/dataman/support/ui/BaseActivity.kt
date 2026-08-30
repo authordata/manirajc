@@ -19,13 +19,14 @@ open class BaseActivity : AppCompatActivity() {
 
     protected fun setupBottomNavigation(navView: BottomNavigationView) {
         navView.setOnItemSelectedListener { item ->
+            val isGiver = getSharedPreferences("hearu_prefs", Context.MODE_PRIVATE).getBoolean("is_giver", false)
             when (item.itemId) {
                 R.id.nav_home -> {
-                    startActivityWithFlags(Intent(this, ChatActivity::class.java))
+                    startActivityWithFlags(Intent(this, if (isGiver) GiverDashboardActivity::class.java else SessionListActivity::class.java))
                     return@setOnItemSelectedListener true
                 }
                 R.id.nav_chat -> {
-                    startActivityWithFlags(Intent(this, ChatActivity::class.java))
+                    startActivityWithFlags(Intent(this, if (isGiver) SessionListActivity::class.java else ChatActivity::class.java))
                     return@setOnItemSelectedListener true
                 }
                 R.id.nav_profile -> {

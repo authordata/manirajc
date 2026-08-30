@@ -24,6 +24,8 @@
             </intent-filter>
         </activity>
 
+        <activity android:name=".ui.SessionListActivity" />
+        <activity android:name=".ui.GiverDashboardActivity" />
     </application>
 
 </manifest>

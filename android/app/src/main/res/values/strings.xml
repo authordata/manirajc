@@ -38,4 +38,21 @@
     <string name="dark_mode_option">🌙 Dark Mode</string>
     <string name="system_default">📱 System Default</string>
     <string name="language">Language</string>
+    <string name="my_sessions">My Sessions</string>
+    <string name="support_dashboard">Support Dashboard</string>
+    <string name="no_sessions">No sessions yet. Tap + to start.</string>
+    <string name="no_pending">No pending requests. You\'ll be notified when someone needs help.</string>
+    <string name="choose_support">Choose Support Type</string>
+    <string name="ai_support">🤖 AI Support</string>
+    <string name="human_support">👤 Human Support</string>
+    <string name="accept">Accept</string>
+    <string name="pass">Pass</string>
+    <string name="online">Online</string>
+    <string name="offline">Offline</string>
+    <string name="you_are">You are:</string>
+    <string name="waiting_for_giver">Waiting for a support giver to connect...</string>
+    <string name="giver_joined">A support giver has joined!</string>
+    <string name="new_session">New Session</string>
+    <string name="session_cause_hint">What\'s on your mind? (optional)</string>
+    <string name="start_session">Start Session</string>
 </resources>

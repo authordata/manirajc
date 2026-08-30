@@ -77,4 +77,25 @@ interface ApiService {
 
     @GET("/subscriptions/status")
     suspend fun getSubscriptionStatus(): Response<SubscriptionStatus>
+
+    // Giver Dashboard
+    @GET("/sessions/pending")
+    suspend fun getPendingSessions(): Response<List<SessionInfo>>
+
+    @POST("/sessions/{sessionId}/accept")
+    suspend fun acceptSession(@Path("sessionId") sessionId: Int): Response<SuccessResponse>
+
+    @POST("/sessions/{sessionId}/reject")
+    suspend fun rejectSession(@Path("sessionId") sessionId: Int): Response<SuccessResponse>
+
+    // Active Sessions
+    @GET("/sessions/active")
+    suspend fun getActiveSessions(): Response<List<SessionInfo>>
+
+    // Giver Availability
+    @POST("/givers/toggle-availability")
+    suspend fun toggleAvailability(): Response<Map<String, Any>>
+
+    @GET("/givers/availability")
+    suspend fun getAvailability(): Response<Map<String, Any>>
 }
