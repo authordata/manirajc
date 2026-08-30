@@ -79,15 +79,19 @@ data class AuthResponse(
 )
 
 data class SessionRequest(
-    val cause: String? = null,
-    @SerializedName("is_ai_session") val isAiSession: Boolean = false
+    val cause: String? = null
 )
 
 data class SessionResponse(
-    val id: Int,
-    val status: String
+    @SerializedName("session_id") val sessionId: Int,
+    val status: String,
+    @SerializedName("is_ai_session") val isAiSession: Boolean = false
 )
 
 data class MessageRequest(
     val content: String
+)
+
+data class AiMessageResponse(
+    @SerializedName("reply") val reply: String
 )

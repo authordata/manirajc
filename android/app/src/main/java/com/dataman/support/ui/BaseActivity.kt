@@ -16,6 +16,7 @@ open class BaseActivity : AppCompatActivity() {
         navView.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_home -> {
+                    startActivityWithFlags(Intent(this, ChatActivity::class.java))
                     return@setOnItemSelectedListener true
                 }
                 R.id.nav_chat -> {

@@ -5,13 +5,26 @@ import com.dataman.support.data.remote.ApiService
 
 class ChatRepository(private val apiService: ApiService) {
     
-    suspend fun createSession(request: SessionRequest): Result<SessionResponse> {
+    suspend fun requestHumanSession(request: SessionRequest): Result<SessionResponse> {
         return try {
-            val response = apiService.createSession(request)
+            val response = apiService.requestHumanSession(request)
             if (response.isSuccessful && response.body() != null) {
                 Result.success(response.body()!!)
             } else {
-                Result.failure(Exception("Failed to create session: ${response.code()}"))
+                Result.failure(Exception("Failed to request human session: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun requestAiSession(request: SessionRequest): Result<SessionResponse> {
+        return try {
+            val response = apiService.requestAiSession(request)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to request AI session: ${response.code()}"))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -38,6 +51,19 @@ class ChatRepository(private val apiService: ApiService) {
                 Result.success(response.body()!!)
             } else {
                 Result.failure(Exception("Failed to send message: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun sendAiMessage(sessionId: Int, request: MessageRequest): Result<AiMessageResponse> {
+        return try {
+            val response = apiService.sendAiMessage(sessionId.toString(), request)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to send AI message: ${response.code()}"))
             }
         } catch (e: Exception) {
             Result.failure(e)

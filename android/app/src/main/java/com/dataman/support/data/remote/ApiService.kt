@@ -17,8 +17,11 @@ interface ApiService {
     @PUT("/users/me")
     suspend fun updateUser(@Body user: User): Response<User>
 
-    @POST("/sessions")
-    suspend fun createSession(@Body request: SessionRequest): Response<SessionResponse>
+    @POST("/sessions/request")
+    suspend fun requestHumanSession(@Body request: SessionRequest): Response<SessionResponse>
+
+    @POST("/sessions/request-ai")
+    suspend fun requestAiSession(@Body request: SessionRequest): Response<SessionResponse>
 
     @GET("/sessions/{id}/messages")
     suspend fun getMessages(@Path("id") sessionId: String): Response<List<ChatMessage>>
@@ -29,7 +32,13 @@ interface ApiService {
         @Body request: MessageRequest
     ): Response<ChatMessage>
 
-    @POST("/sessions/{id}/feedback")
+    @POST("/sessions/{id}/ai-message")
+    suspend fun sendAiMessage(
+        @Path("id") sessionId: String,
+        @Body request: MessageRequest
+    ): Response<AiMessageResponse>
+
+    @POST("/feedback/{id}")
     suspend fun submitFeedback(
         @Path("id") sessionId: String,
         @Body request: FeedbackRequest

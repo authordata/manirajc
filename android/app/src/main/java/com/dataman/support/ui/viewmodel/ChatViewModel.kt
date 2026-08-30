@@ -39,14 +39,21 @@ class ChatViewModel(
 
     private var pollingJob: Job? = null
 
+    private var isAiSession = false
+
     fun startSession(cause: String?, isAi: Boolean) {
         viewModelScope.launch {
             _sessionState.value = SessionState.Loading
-            val result = chatRepository.createSession(SessionRequest(cause, isAi))
+            isAiSession = isAi
+            val result = if (isAi) {
+                chatRepository.requestAiSession(SessionRequest(cause))
+            } else {
+                chatRepository.requestHumanSession(SessionRequest(cause))
+            }
             if (result.isSuccess) {
                 val session = result.getOrNull()
                 if (session != null) {
-                    _sessionState.value = SessionState.Active(session.id)
+                    _sessionState.value = SessionState.Active(session.sessionId)
                     startPolling()
                 } else {
                     _sessionState.value = SessionState.Error("Invalid session data")
@@ -74,9 +81,16 @@ class ChatViewModel(
         if (currentState is SessionState.Active) {
             viewModelScope.launch {
                 _sendingMessage.value = true
-                val result = chatRepository.sendMessage(currentState.sessionId, MessageRequest(text))
-                if (result.isSuccess) {
-                    loadMessages()
+                if (isAiSession) {
+                    val result = chatRepository.sendAiMessage(currentState.sessionId, MessageRequest(text))
+                    if (result.isSuccess) {
+                        loadMessages()
+                    }
+                } else {
+                    val result = chatRepository.sendMessage(currentState.sessionId, MessageRequest(text))
+                    if (result.isSuccess) {
+                        loadMessages()
+                    }
                 }
                 _sendingMessage.value = false
             }

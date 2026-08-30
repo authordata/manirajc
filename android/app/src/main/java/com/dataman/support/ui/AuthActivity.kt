@@ -4,14 +4,18 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.ArrayAdapter
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.snackbar.Snackbar
 import com.dataman.support.databinding.ActivityAuthBinding
+import com.dataman.support.ui.viewmodel.AuthViewModel
+import com.dataman.support.ui.viewmodel.ViewModelFactory
 
 class AuthActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityAuthBinding
     private var isLoginMode = true
+    private val authViewModel: AuthViewModel by viewModels { ViewModelFactory(applicationContext) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -20,6 +24,31 @@ class AuthActivity : AppCompatActivity() {
 
         setupUI()
         setupListeners()
+        setupObservers()
+    }
+
+    private fun setupObservers() {
+        authViewModel.loginResult.observe(this) { result ->
+            showLoading(false)
+            if (result != null) {
+                if (result.isSuccess) {
+                    navigateToChat()
+                } else {
+                    Snackbar.make(binding.root, result.exceptionOrNull()?.message ?: "Login failed", Snackbar.LENGTH_LONG).show()
+                }
+            }
+        }
+        
+        authViewModel.registerResult.observe(this) { result ->
+            showLoading(false)
+            if (result != null) {
+                if (result.isSuccess) {
+                    navigateToChat()
+                } else {
+                    Snackbar.make(binding.root, result.exceptionOrNull()?.message ?: "Registration failed", Snackbar.LENGTH_LONG).show()
+                }
+            }
+        }
     }
 
     private fun setupUI() {
@@ -72,11 +101,7 @@ class AuthActivity : AppCompatActivity() {
         if (!validateInputs(email, password)) return
         
         showLoading(true)
-        // Mock success
-        binding.root.postDelayed({
-            showLoading(false)
-            navigateToChat()
-        }, 500)
+        authViewModel.login(email, password)
     }
 
     private fun handleRegister() {
@@ -86,12 +111,11 @@ class AuthActivity : AppCompatActivity() {
 
         if (!validateInputs(email, password)) return
 
+        val role = if (binding.spinnerRole.selectedItemPosition == 0) "seeker" else "giver"
+        val isAnonymous = binding.cbAnonymous.isChecked
+
         showLoading(true)
-        // Mock success
-        binding.root.postDelayed({
-            showLoading(false)
-            navigateToChat()
-        }, 500)
+        authViewModel.register(email, password, displayName, role, isAnonymous)
     }
 
     private fun validateInputs(email: String, pass: String): Boolean {
