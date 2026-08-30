@@ -390,8 +390,8 @@
                         <div class="form-group">
                             <label>Role</label>
                             <select id="role">
-                                <option value="seeker">Seeker</option>
-                                <option value="giver">Giver</option>
+                                <option value="support_seeker">Seeker</option>
+                                <option value="support_giver">Giver</option>
                             </select>
                         </div>
                     </div>
@@ -593,7 +593,19 @@
                 }
                 
                 const data = await res.json();
-                if (!res.ok) throw new Error(data.detail || 'API Error');
+                if (!res.ok) {
+                    let errMsg = 'API Error';
+                    if (typeof data.detail === 'string') {
+                        errMsg = data.detail;
+                    } else if (Array.isArray(data.detail)) {
+                        errMsg = data.detail.map(e => e.msg || e.message || JSON.stringify(e)).join(', ');
+                    } else if (data.detail && typeof data.detail === 'object') {
+                        errMsg = data.detail.msg || data.detail.message || JSON.stringify(data.detail);
+                    } else if (data.message) {
+                        errMsg = data.message;
+                    }
+                    throw new Error(errMsg);
+                }
                 return data;
             } catch (err) {
                 console.error('API Error:', err);
@@ -621,13 +633,19 @@
                     });
                     
                     if (!res.ok) {
-                        // Fallback to JSON if API expects JSON
+                        // First attempt with form data failed, try JSON
                         const jsonRes = await fetch(`${API_BASE_URL}/auth/login`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ email, password })
                         });
-                        if (!jsonRes.ok) throw new Error('Login failed');
+                        if (!jsonRes.ok) {
+                            const errData = await jsonRes.json().catch(() => ({}));
+                            let errMsg = 'Login failed';
+                            if (typeof errData.detail === 'string') errMsg = errData.detail;
+                            else if (Array.isArray(errData.detail)) errMsg = errData.detail.map(e => e.msg || '').join(', ');
+                            throw new Error(errMsg);
+                        }
                         const data = await jsonRes.json();
                         token = data.access_token;
                     } else {
@@ -894,7 +912,7 @@
                     const sessionInfo = await apiCall('/sessions/active');
                     const isAi = sessionInfo.find(s => s.id === currentSessionId)?.is_ai;
                     if (isAi) {
-                         await apiCall(`/sessions/${currentSessionId}/ai-message`, 'POST', { content });
+                        await apiCall(`/sessions/${currentSessionId}/ai-message`, 'POST', { content });
                     }
                 } catch(e) {} // ignore if endpoint doesn't exist
                 
