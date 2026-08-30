@@ -8,7 +8,7 @@ from sqlmodel import Field, SQLModel
 class Role(str, Enum):
     SUPPORT_SEEKER = "support_seeker"
     SUPPORT_GIVER = "support_giver"
-    # Aliases for convenience
+    # Aliases for backward compatibility
     SEEKER = "support_seeker"
     GIVER = "support_giver"
 
@@ -17,6 +17,9 @@ class SessionStatus(str, Enum):
     OPEN = "open"
     ACTIVE = "active"
     CLOSED = "closed"
+    # Aliases for compatibility
+    REQUESTED = "open"
+    ENDED = "closed"
 
 
 class User(SQLModel, table=True):
@@ -31,13 +34,15 @@ class User(SQLModel, table=True):
     is_phone_verified: bool = False
     is_email_verified: bool = False
     is_premium: bool = False
+    is_admin: bool = False
 
 
 class OtpCode(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int = Field(index=True)
+    user_id: Optional[int] = Field(default=None, index=True)
+    target: Optional[str] = None
     code: str
-    otp_type: str
+    otp_type: str = "email"  # 'email' or 'phone'
     expires_at: datetime
     is_used: bool = False
 
@@ -46,7 +51,7 @@ class FriendRequest(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     sender_id: int = Field(index=True)
     receiver_id: int = Field(index=True)
-    session_id: int = Field(index=True)
+    session_id: Optional[int] = Field(default=None, index=True)
     status: str = "pending"
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -66,6 +71,7 @@ class GiverProfile(SQLModel, table=True):
     about: Optional[str] = None
     experience: Optional[str] = None
     is_available: bool = True
+    is_verified: bool = True
 
 
 class ChatSession(SQLModel, table=True):
@@ -108,7 +114,7 @@ class Report(SQLModel, table=True):
 
 class MoodRating(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    session_id: int = Field(index=True)
+    session_id: Optional[int] = Field(default=None, index=True)
     user_id: int = Field(index=True)
     mood_before: int
     mood_after: Optional[int] = None

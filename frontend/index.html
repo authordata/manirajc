@@ -539,6 +539,7 @@
         let token = localStorage.getItem('token');
         let currentUser = null;
         let currentSessionId = null;
+        let currentSessionIsAi = false;
         let chatInterval = null;
         let dashboardInterval = null;
         let isGiverAvailable = false;
@@ -802,30 +803,41 @@
 
         async function loadSeekerActiveSessions() {
             try {
-                const activeSessions = await apiCall('/sessions/active');
-                const pendingSessions = await apiCall('/sessions/pending').catch(() => []);
-                const sessions = [...activeSessions, ...(Array.isArray(pendingSessions) ? pendingSessions : [])];
+                const sessions = await apiCall('/sessions/active');
                 const container = document.getElementById('seeker-active-sessions');
                 container.innerHTML = '';
                 
-                if (sessions.length === 0) {
-                    container.innerHTML = '<p>No active sessions.</p>';
+                if (!sessions || sessions.length === 0) {
+                    container.innerHTML = '<p style="color: #888; font-style: italic;">No active or waiting sessions.</p>';
                     return;
                 }
                 
                 sessions.forEach(s => {
                     const el = document.createElement('div');
                     el.className = 'session-card';
-                    el.onclick = () => openChat(s.id, s.is_ai_session ? 'AI Support' : 'Anonymous Listener');
+                    const isWaiting = s.status === 'open';
+                    const isAi = s.is_ai_session;
+                    const badgeText = isWaiting ? 'Finding Giver' : (isAi ? 'AI Active' : 'Connected');
+                    const badgeStyle = isWaiting ? 'background: #fff3cd; color: #856404;' : '';
+                    
+                    el.onclick = () => {
+                        if (isWaiting) {
+                            showToast('Waiting for a Support Giver to accept your request...', 'info');
+                        } else {
+                            openChat(s.id, isAi ? 'AI Support' : 'Support Giver', isAi);
+                        }
+                    };
                     el.innerHTML = `
-                        <span class="badge">${s.status}</span>
-                        <h4>${s.is_ai_session ? 'AI Session' : 'Human Session'}</h4>
-                        <p style="font-size: 0.9rem; color: #666;">${s.cause || 'No specific topic'}</p>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <span class="badge" style="${badgeStyle}">${badgeText}</span>
+                        </div>
+                        <h4>${isAi ? 'AI Support Session' : 'Human Support Connection'}</h4>
+                        <p style="font-size: 0.9rem; color: #666; margin-top: 0.25rem;">${s.cause || 'General support'}</p>
                     `;
                     container.appendChild(el);
                 });
             } catch (err) {
-                console.error(err);
+                console.error('Failed to load seeker sessions:', err);
             }
         }
 
@@ -907,8 +919,9 @@
         }
 
         // Chat Functions
-        function openChat(id, title) {
+        function openChat(id, title, isAi = false) {
             currentSessionId = id;
+            currentSessionIsAi = isAi || title.includes('AI');
             document.getElementById('chat-title').innerText = title;
             document.getElementById('chat-messages').innerHTML = '';
             showView('chat-view');
@@ -960,15 +973,13 @@
             try {
                 await apiCall(`/sessions/${currentSessionId}/messages`, 'POST', { content });
                 
-                // If it's an AI session, we might need to trigger the AI response manually depending on backend impl.
-                // Assuming backend auto-replies or provides a specific endpoint:
-                try {
-                    const sessionInfo = await apiCall('/sessions/active');
-                    const isAi = sessionInfo.find(s => s.id === currentSessionId)?.is_ai_session;
-                    if (isAi) {
-                        await apiCall(`/sessions/${currentSessionId}/ai-message`, 'POST', { content });
+                if (currentSessionIsAi) {
+                    try {
+                        await apiCall(`/sessions/${currentSessionId}/ai-message`, 'POST');
+                    } catch (aiErr) {
+                        console.error('AI response error:', aiErr);
                     }
-                } catch(e) {} // ignore if endpoint doesn't exist
+                }
                 
                 fetchMessages();
             } catch (err) {
