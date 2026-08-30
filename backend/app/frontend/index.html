@@ -778,24 +778,23 @@
             const causeInputId = type === 'ai' ? 'ai-cause' : 'human-cause';
             const cause = document.getElementById(causeInputId).value;
             
-            // Start session directly (no mood blocker)
             try {
-                try {
-                    const endpoint = type === 'ai' ? '/sessions/request-ai' : '/sessions/request';
-                    const session = await apiCall(endpoint, 'POST', { cause });
-                    
-                    document.getElementById(causeInputId).value = '';
-                    showToast(`${type.toUpperCase()} session started`, 'success');
-                    
-                    if (type === 'ai' || session.status === 'active') {
-                        openChat(session.id, type === 'ai' ? 'AI Support' : 'Anonymous Listener');
-                    } else {
-                        loadSeekerActiveSessions();
-                    }
-                } catch (err) {
-                    showToast(err.message, 'error');
+                const endpoint = type === 'ai' ? '/sessions/request-ai' : '/sessions/request';
+                const session = await apiCall(endpoint, 'POST', { cause });
+                
+                document.getElementById(causeInputId).value = '';
+                showToast(`${type === 'ai' ? 'AI Support' : 'Human Support'} session started`, 'success');
+                
+                if (type === 'ai' || session.status === 'active') {
+                    openChat(session.id, type === 'ai' ? 'AI Support' : 'Support Giver');
+                    loadSeekerActiveSessions();
+                } else {
+                    showToast('Waiting for a Support Giver to connect...', 'info');
+                    loadSeekerActiveSessions();
                 }
-            };
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
         }
 
         async function loadSeekerActiveSessions() {
