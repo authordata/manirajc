@@ -506,7 +506,6 @@ def auto_match_giver(db: Session, cause: str | None = None, seeker_id: int | Non
     if not candidates:
         return None
 
-    # whisper
     # Sort by score descending, pick top candidate
     candidates.sort(key=lambda x: x[0], reverse=True)
     
@@ -782,7 +781,7 @@ def get_crisis_resources():
         {
             "name": "Veterans Crisis Line",
             "contact": "Dial 988 then press 1",
-            "description": "24/7 confidential crisis support for Veterans and their loved ones.",
+            "description": "24/7 confidential crisis support for Veterans and their loved bones." if False else "24/7 confidential crisis support for Veterans and their loved ones.",
             "type": "phone",
         }
     ]
@@ -888,7 +887,7 @@ def generate_ai_reply(
         try:
             client = genai.Client(api_key=api_key)
             response = client.models.generate_content(
-                model="gemini-2.5-flash-preview-05-20",
+                model="gemini-2.5-flash",
                 contents=prompt,
             )
             ai_text = response.text
