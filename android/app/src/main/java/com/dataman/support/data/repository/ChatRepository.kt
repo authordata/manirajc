@@ -44,7 +44,7 @@ class ChatRepository(private val apiService: ApiService) {
         }
     }
 
-    suspend fun sendMessage(sessionId: Int, request: MessageRequest): Result<ChatMessage> {
+    suspend fun sendMessage(sessionId: Int, request: MessageRequest): Result<SendMessageResponse> {
         return try {
             val response = apiService.sendMessage(sessionId.toString(), request)
             if (response.isSuccessful && response.body() != null) {
@@ -70,7 +70,7 @@ class ChatRepository(private val apiService: ApiService) {
         }
     }
 
-    suspend fun submitFeedback(sessionId: Int, request: FeedbackRequest): Result<FeedbackResponse> {
+    suspend fun submitFeedback(sessionId: Int, request: FeedbackRequest): Result<SuccessResponse> {
         return try {
             val response = apiService.submitFeedback(sessionId.toString(), request)
             if (response.isSuccessful && response.body() != null) {
@@ -83,11 +83,11 @@ class ChatRepository(private val apiService: ApiService) {
         }
     }
 
-    suspend fun submitReport(request: ReportRequest): Result<Unit> {
+    suspend fun submitReport(request: ReportRequest): Result<SuccessResponse> {
         return try {
             val response = apiService.submitReport(request)
-            if (response.isSuccessful) {
-                Result.success(Unit)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
             } else {
                 Result.failure(Exception("Failed to submit report: ${response.code()}"))
             }

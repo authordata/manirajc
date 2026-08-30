@@ -28,7 +28,8 @@ class AuthRepository(
 
     suspend fun login(request: LoginRequest): Result<AuthResponse> {
         return try {
-            val response = apiService.login(request)
+            // Backend uses OAuth2PasswordRequestForm (form-encoded, field name is 'username')
+            val response = apiService.login(request.email, request.password)
             if (response.isSuccessful && response.body() != null) {
                 val authResponse = response.body()!!
                 tokenManager.saveToken(authResponse.accessToken)

@@ -6,9 +6,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dataman.support.data.model.ChatMessage
 import com.dataman.support.data.model.FeedbackRequest
-import com.dataman.support.data.model.FeedbackResponse
 import com.dataman.support.data.model.MessageRequest
 import com.dataman.support.data.model.SessionRequest
+import com.dataman.support.data.model.SuccessResponse
 import com.dataman.support.data.repository.ChatRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -34,11 +34,10 @@ class ChatViewModel(
     private val _sendingMessage = MutableLiveData<Boolean>(false)
     val sendingMessage: LiveData<Boolean> = _sendingMessage
 
-    private val _feedbackResult = MutableLiveData<Result<FeedbackResponse>?>()
-    val feedbackResult: LiveData<Result<FeedbackResponse>?> = _feedbackResult
+    private val _feedbackResult = MutableLiveData<Result<SuccessResponse>?>()
+    val feedbackResult: LiveData<Result<SuccessResponse>?> = _feedbackResult
 
     private var pollingJob: Job? = null
-
     private var isAiSession = false
 
     fun startSession(cause: String?, isAi: Boolean) {
@@ -105,6 +104,11 @@ class ChatViewModel(
                 _feedbackResult.value = result
             }
         }
+    }
+
+    fun stopPolling() {
+        pollingJob?.cancel()
+        pollingJob = null
     }
 
     private fun startPolling() {

@@ -8,14 +8,15 @@ interface ApiService {
     @POST("/auth/register")
     suspend fun register(@Body request: RegisterRequest): Response<AuthResponse>
 
+    @FormUrlEncoded
     @POST("/auth/login")
-    suspend fun login(@Body request: LoginRequest): Response<AuthResponse>
+    suspend fun login(
+        @Field("username") email: String,
+        @Field("password") password: String
+    ): Response<AuthResponse>
 
     @GET("/users/me")
     suspend fun getCurrentUser(): Response<User>
-
-    @PUT("/users/me")
-    suspend fun updateUser(@Body user: User): Response<User>
 
     @POST("/sessions/request")
     suspend fun requestHumanSession(@Body request: SessionRequest): Response<SessionResponse>
@@ -30,7 +31,7 @@ interface ApiService {
     suspend fun sendMessage(
         @Path("id") sessionId: String,
         @Body request: MessageRequest
-    ): Response<ChatMessage>
+    ): Response<SendMessageResponse>
 
     @POST("/sessions/{id}/ai-message")
     suspend fun sendAiMessage(
@@ -42,8 +43,14 @@ interface ApiService {
     suspend fun submitFeedback(
         @Path("id") sessionId: String,
         @Body request: FeedbackRequest
-    ): Response<FeedbackResponse>
+    ): Response<SuccessResponse>
 
     @POST("/reports")
-    suspend fun submitReport(@Body request: ReportRequest): Response<Unit>
+    suspend fun submitReport(@Body request: ReportRequest): Response<SuccessResponse>
+
+    @PUT("/profiles/seeker")
+    suspend fun updateSeekerProfile(@Body profile: SeekerProfileUpsert): Response<SuccessResponse>
+
+    @PUT("/profiles/giver")
+    suspend fun updateGiverProfile(@Body profile: GiverProfileUpsert): Response<SuccessResponse>
 }

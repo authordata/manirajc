@@ -32,26 +32,18 @@ class AuthViewModel(
     fun login(email: String, password: String) {
         viewModelScope.launch {
             _isLoading.value = true
+            // AuthRepository.login() already saves the token via tokenManager
             val result = authRepository.login(LoginRequest(email, password))
-            if (result.isSuccess) {
-                result.getOrNull()?.token?.let {
-                    tokenManager.saveToken(it)
-                }
-            }
             _loginResult.value = result
             _isLoading.value = false
         }
     }
 
-    fun register(email: String, password: String, displayName: String?, role: String, isAnonymous: Boolean) {
+    fun register(email: String, password: String, displayName: String, role: String, isAnonymous: Boolean) {
         viewModelScope.launch {
             _isLoading.value = true
+            // AuthRepository.register() already saves the token via tokenManager
             val result = authRepository.register(RegisterRequest(email, password, displayName, role, isAnonymous))
-            if (result.isSuccess) {
-                result.getOrNull()?.token?.let {
-                    tokenManager.saveToken(it)
-                }
-            }
             _registerResult.value = result
             _isLoading.value = false
         }
