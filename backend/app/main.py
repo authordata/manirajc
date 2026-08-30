@@ -466,7 +466,7 @@ def request_session(
         giver_id=giver.id if giver else None,
         cause=payload.cause,
         status=SessionStatus.ACTIVE if giver else SessionStatus.REQUESTED,
-        is_ai=False,
+        is_ai_session=False,
     )
     db.add(session)
     db.commit()
@@ -485,7 +485,7 @@ def request_ai_session(
         giver_id=None,
         cause=payload.cause,
         status=SessionStatus.ACTIVE,
-        is_ai=True,
+        is_ai_session=True,
     )
     db.add(session)
     db.commit()
@@ -565,7 +565,7 @@ def send_message(
     if session.seeker_id != user.id and session.giver_id != user.id:
         raise HTTPException(status_code=403, detail="Forbidden")
 
-    msg = ChatMessage(session_id=session_id, sender_id=user.id, content=payload.content)
+    msg = ChatMessage(session_id=session_id, sender_user_id=user.id, sender_label="seeker", content=payload.content)
     db.add(msg)
     db.commit()
     db.refresh(msg)
@@ -599,7 +599,7 @@ def submit_feedback(
         raise HTTPException(status_code=404, detail="Session not found")
     if session.seeker_id != user.id and session.giver_id != user.id:
         raise HTTPException(status_code=403, detail="Forbidden")
-    feedback = Feedback(session_id=session_id, user_id=user.id, **payload.model_dump())
+    feedback = Feedback(session_id=session_id, submitted_by_user_id=user.id, **payload.model_dump())
     db.add(feedback)
     db.commit()
     return {"status": "received"}
@@ -611,7 +611,7 @@ def submit_report(
     user: User = Depends(current_user),
     db: Session = Depends(get_session),
 ):
-    report = Report(reporter_id=user.id, **payload.model_dump())
+    report = Report(reported_by_user_id=user.id, **payload.model_dump())
     db.add(report)
     db.commit()
     return {"status": "reported"}
@@ -775,7 +775,7 @@ async def websocket_endpoint(
                 except Exception:
                     pass
 
-            msg = ChatMessage(session_id=session_id, sender_id=user.id, content=data)
+            msg = ChatMessage(session_id=session_id, sender_user_id=user.id, sender_label="seeker", content=data)
             db.add(msg)
             db.commit()
             db.refresh(msg)
@@ -784,7 +784,7 @@ async def websocket_endpoint(
                 await conn.send_json({
                     "id": msg.id,
                     "session_id": session_id,
-                    "sender_id": user.id,
+                    "sender_user_id": user.id,
                     "content": msg.content,
                     "created_at": msg.created_at.isoformat(),
                 })
@@ -801,7 +801,7 @@ def generate_ai_reply(
     db: Session = Depends(get_session),
 ):
     session = db.get(ChatSession, session_id)
-    if not session or not session.is_ai:
+    if not session or not session.is_ai_session:
         raise HTTPException(status_code=400, detail="Not an active AI session")
     if session.seeker_id != user.id:
         raise HTTPException(status_code=403, detail="Forbidden")
@@ -811,7 +811,7 @@ def generate_ai_reply(
     ).all()
 
     conversation_history = "\n".join(
-        [f"{'Seeker' if m.sender_id == user.id else 'AI'}: {m.content}" for m in messages]
+        [f"{'Seeker' if m.sender_user_id == user.id else 'AI'}: {m.content}" for m in messages]
     )
 
     prompt = (
@@ -835,7 +835,7 @@ def generate_ai_reply(
     else:
         ai_text = "I'm here for you and I'm listening. Please tell me more about how you're feeling."
 
-    ai_msg = ChatMessage(session_id=session_id, sender_id=None, content=ai_text)
+    ai_msg = ChatMessage(session_id=session_id, sender_user_id=None, sender_label="ai", content=ai_text)
     db.add(ai_msg)
     db.commit()
     db.refresh(ai_msg)

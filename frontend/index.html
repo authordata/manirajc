@@ -432,7 +432,7 @@
         <!-- Seeker Dashboard View -->
         <div id="seeker-dashboard" class="view">
             <h2>Support Seeker Dashboard</h2>
-            <p style="margin-bottom: 2rem;">How are you feeling today?</p>
+            <p style="margin-bottom: 2rem;">We're here for you. Choose how you'd like to connect.</p>
             
             <div class="dashboard-grid">
                 <div class="card">
@@ -778,10 +778,8 @@
             const causeInputId = type === 'ai' ? 'ai-cause' : 'human-cause';
             const cause = document.getElementById(causeInputId).value;
             
-            document.getElementById('mood-overlay').classList.add('active');
-            
-            // Wait for mood selection before proceeding
-            window.continueSessionCreate = async () => {
+            // Start session directly (no mood blocker)
+            try {
                 try {
                     const endpoint = type === 'ai' ? '/sessions/request-ai' : '/sessions/request';
                     const session = await apiCall(endpoint, 'POST', { cause });
