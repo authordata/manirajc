@@ -21,6 +21,7 @@
         }
 
         [data-theme="dark"] {
+            background: linear-gradient(135deg, #1a2a2a 0%, #1a1a2e 50%, #16213e 100%) !important;
             --bg-color: #121212;
             --text-color: #f5f5f5;
             --card-bg: #1e1e1e;
@@ -349,9 +350,20 @@
     </style>
 </head>
 <body>
+    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; opacity: 0.03; background-image: radial-gradient(circle at 25px 25px, #7E57C2 1px, transparent 0); background-size: 50px 50px;"></div>
 
     <header class="header">
-        <h1 onclick="showDashboard()">HearU</h1>
+        <h1 onclick="showDashboard()" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <svg width="28" height="28" viewBox="0 0 100 100">
+                    <defs><linearGradient id="navGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#00897B"/><stop offset="100%" style="stop-color:#7E57C2"/>
+                    </linearGradient></defs>
+                    <path d="M50 85 C25 65, 8 48, 18 30 C23 20, 35 18, 50 32 C65 18, 77 20, 82 30 C92 48, 75 65, 50 85Z" 
+                          fill="none" stroke="url(#navGrad)" stroke-width="6" stroke-linecap="round"/>
+                    <path d="M82 30 C88 28, 92 32, 88 26" fill="none" stroke="url(#navGrad)" stroke-width="6" stroke-linecap="round"/>
+                </svg>
+                HearU
+            </h1>
         <div class="controls">
             <button class="btn btn-outline" id="theme-toggle" onclick="toggleTheme()">🌙</button>
             <div id="user-nav" class="nav-links">
@@ -367,6 +379,21 @@
         <!-- Auth View -->
         <div id="auth-view" class="view active">
             <div class="card" style="max-width: 500px; margin: 0 auto; width: 100%;">
+                <div style="text-align: center; padding: 1.5rem 0 1rem;">
+                    <svg width="70" height="70" viewBox="0 0 100 100" style="margin-bottom: 0.5rem;">
+                        <defs>
+                            <linearGradient id="heartGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#00897B"/>
+                                <stop offset="100%" style="stop-color:#7E57C2"/>
+                            </linearGradient>
+                        </defs>
+                        <path d="M50 85 C25 65, 8 48, 18 30 C23 20, 35 18, 50 32 C65 18, 77 20, 82 30 C92 48, 75 65, 50 85Z" 
+                              fill="none" stroke="url(#heartGrad)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M82 30 C88 28, 92 32, 88 26" fill="none" stroke="url(#heartGrad)" stroke-width="5" stroke-linecap="round"/>
+                    </svg>
+                    <h2 style="margin: 0; color: #00897B; font-size: 1.8rem; font-weight: 700;">HearU</h2>
+                    <p style="margin: 0.2rem 0 0; color: #888; font-size: 0.9rem;">You are not alone</p>
+                </div>
                 <div class="tabs">
                     <div class="tab active" onclick="switchAuthTab('login')">Login</div>
                     <div class="tab" onclick="switchAuthTab('register')">Register</div>
@@ -380,6 +407,7 @@
                     <div class="form-group">
                         <label>Password</label>
                         <input type="password" id="password" required>
+                        <small id="pw-hint" style="color: #888; font-size: 0.75rem; display: none;">Min 8 chars: letters + numbers + symbol (!@#$%...)</small>
                     </div>
                     
                     <div id="register-fields" style="display: none;">
@@ -570,9 +598,11 @@
             if (mode === 'login') {
                 regFields.style.display = 'none';
                 btn.innerText = 'Login';
+                document.getElementById('pw-hint').style.display = 'none';
             } else {
                 regFields.style.display = 'block';
                 btn.innerText = 'Register';
+                document.getElementById('pw-hint').style.display = 'block';
             }
         }
 
@@ -620,6 +650,20 @@
             const password = document.getElementById('password').value;
             
             try {
+                // Password strength validation for registration
+                if (authMode === 'register') {
+                    const passwordRegex = /^(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+                    if (!passwordRegex.test(password)) {
+                        showToast('Password must be 8+ characters with letters, numbers, and a symbol (!@#$%...)', 'error');
+                        return;
+                    }
+                    const display_name = document.getElementById('display_name').value;
+                    if (!display_name.trim()) {
+                        showToast('Please enter a display name', 'error');
+                        return;
+                    }
+                }
+                
                 if (authMode === 'login') {
                     // Try OAuth2 form data first if standard FastAPI
                     const formData = new URLSearchParams();
