@@ -75,10 +75,11 @@ def current_user(
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing or invalid token")
     token = authorization.split(" ")[1]
-    payload = decode_access_token(token)
-    if not payload or "sub" not in payload:
+    try:
+        user_id_str = decode_access_token(token)
+        user_id = int(user_id_str)
+    except (ValueError, Exception):
         raise HTTPException(status_code=401, detail="Invalid token")
-    user_id = int(payload["sub"])
     user = db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
