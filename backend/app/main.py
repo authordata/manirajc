@@ -437,22 +437,82 @@ def verify_giver(
     return {"status": "verified"}
 
 
-def auto_match_giver(db: Session, cause: str | None = None) -> User | None:
-    # Find available givers
+def auto_match_giver(db: Session, cause: str | None = None, seeker_id: int | None = None) -> User | None:
+    """Smart matching algorithm for connecting seekers with the best giver.
+    
+    Priority:
+    1. Experience match - giver whose experience matches the cause
+    2. Least busy - giver with fewest active sessions
+    3. Highest rated - giver with best average feedback rating
+    4. Random fallback - any available giver
+    """
     available_profiles = db.exec(
         select(GiverProfile).where(GiverProfile.is_available == True)
     ).all()
     if not available_profiles:
         return None
-    # Get user objects for available givers
-    givers = []
+
+    # Build scored list of (score, user, profile)
+    candidates = []
     for profile in available_profiles:
         user = db.get(User, profile.user_id)
-        if user and user.role in (Role.GIVER, Role.SUPPORT_GIVER):
-            givers.append(user)
-    if not givers:
+        if not user or user.role not in (Role.GIVER, Role.SUPPORT_GIVER):
+            continue
+        # Don't match seeker with themselves
+        if seeker_id and user.id == seeker_id:
+            continue
+
+        score = 0
+
+        # Score 1: Experience keyword match (+30 points)
+        if cause and profile.experience:
+            cause_words = set(cause.lower().split())
+            exp_words = set(profile.experience.lower().split())
+            overlap = cause_words & exp_words
+            if overlap:
+                score += 30 + len(overlap) * 5
+
+        # Score 2: Fewer active sessions = more available (+20 max)
+        active_count = db.exec(
+            select(func.count(ChatSession.id)).where(
+                ChatSession.giver_id == user.id,
+                ChatSession.status == SessionStatus.ACTIVE
+            )
+        ).one()
+        if active_count == 0:
+            score += 20
+        elif active_count == 1:
+            score += 10
+        # More than 1 active session = no bonus
+
+        # Score 3: Higher average rating (+15 max)
+        avg_rating = db.exec(
+            select(func.avg(Feedback.rating)).where(
+                Feedback.submitted_by_user_id != user.id,
+                Feedback.session_id.in_(
+                    select(ChatSession.id).where(ChatSession.giver_id == user.id)
+                )
+            )
+        ).one()
+        if avg_rating:
+            score += min(int(avg_rating * 3), 15)
+
+        # Score 4: About section filled out (+5 points)
+        if profile.about and len(profile.about) > 20:
+            score += 5
+
+        candidates.append((score, user))
+
+    if not candidates:
         return None
-    return random.choice(givers)
+
+    # Sort by score descending, pick top candidate
+    candidates.sort(key=lambda x: x[0], reverse=True)
+    
+    # If top candidates have same score, pick randomly among them
+    top_score = candidates[0][0]
+    top_givers = [c[1] for c in candidates if c[0] == top_score]
+    return random.choice(top_givers)
 
 
 @app.post("/sessions/request", response_model=ChatSessionRead)
@@ -461,7 +521,7 @@ def request_session(
     user: User = Depends(require_role(Role.SEEKER)),
     db: Session = Depends(get_session),
 ):
-    giver = auto_match_giver(db, payload.cause)
+    giver = auto_match_giver(db, payload.cause, seeker_id=user.id)
     session = ChatSession(
         seeker_id=user.id,
         giver_id=giver.id if giver else None,
