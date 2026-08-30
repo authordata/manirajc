@@ -465,7 +465,7 @@ def request_session(
         seeker_id=user.id,
         giver_id=giver.id if giver else None,
         cause=payload.cause,
-        status=SessionStatus.ACTIVE if giver else SessionStatus.REQUESTED,
+        status=SessionStatus.ACTIVE if giver else SessionStatus.OPEN,
         is_ai_session=False,
     )
     db.add(session)
@@ -510,7 +510,7 @@ def get_pending_sessions(
     user: User = Depends(require_role(Role.GIVER)),
     db: Session = Depends(get_session),
 ):
-    query = select(ChatSession).where(ChatSession.status == SessionStatus.REQUESTED)
+    query = select(ChatSession).where(ChatSession.status == SessionStatus.OPEN)
     return db.exec(query).all()
 
 
@@ -521,7 +521,7 @@ def accept_session(
     db: Session = Depends(get_session),
 ):
     session = db.get(ChatSession, session_id)
-    if not session or session.status != SessionStatus.REQUESTED:
+    if not session or session.status != SessionStatus.OPEN:
         raise HTTPException(status_code=404, detail="Session not available")
     session.giver_id = user.id
     session.status = SessionStatus.ACTIVE
@@ -542,7 +542,7 @@ def end_session(
         raise HTTPException(status_code=404, detail="Session not found")
     if session.seeker_id != user.id and session.giver_id != user.id:
         raise HTTPException(status_code=403, detail="Forbidden")
-    session.status = SessionStatus.ENDED
+    session.status = SessionStatus.CLOSED
     session.ended_at = datetime.utcnow()
     db.add(session)
     db.commit()
