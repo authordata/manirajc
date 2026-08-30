@@ -103,8 +103,9 @@ def get_user_from_token(token: str, db: Session) -> User | None:
 
 def require_role(role: Role):
     def role_checker(user: User = Depends(current_user)) -> User:
-        if user.role != role:
-            raise HTTPException(status_code=403, detail="Forbidden")
+        # Compare by value to handle enum aliases (SEEKER == SUPPORT_SEEKER == "support_seeker")
+        if user.role.value != role.value:
+            raise HTTPException(status_code=403, detail="Forbidden: wrong role")
         return user
 
     return role_checker
@@ -417,9 +418,11 @@ def list_available_givers(db: Session = Depends(get_session)):
 
 @app.post("/givers/toggle-availability")
 def toggle_giver_availability(
-    user: User = Depends(require_role(Role.GIVER)),
+    user: User = Depends(current_user),
     db: Session = Depends(get_session),
 ):
+    if user.role.value not in ("support_giver",):
+        raise HTTPException(status_code=403, detail="Only Support Givers can toggle availability")
     profile = db.exec(select(GiverProfile).where(GiverProfile.user_id == user.id)).first()
     if not profile:
         profile = GiverProfile(user_id=user.id, is_available=True, is_verified=True)
@@ -434,9 +437,11 @@ def toggle_giver_availability(
 
 @app.get("/givers/availability")
 def get_giver_availability(
-    user: User = Depends(require_role(Role.GIVER)),
+    user: User = Depends(current_user),
     db: Session = Depends(get_session),
 ):
+    if user.role.value not in ("support_giver",):
+        return {"is_available": False}
     profile = db.exec(select(GiverProfile).where(GiverProfile.user_id == user.id)).first()
     if not profile:
         profile = GiverProfile(user_id=user.id, is_available=True, is_verified=True)
@@ -493,8 +498,7 @@ def auto_match_giver(db: Session, cause: str | None = None, seeker_id: int | Non
             overlap = cause_words & exp_words
             if overlap:
                 score += 30 + len(overlap) * 5
-
-        active_count = db.exec(
+            active_count = db.exec(
             select(func.count(ChatSession.id)).where(
                 ChatSession.giver_id == user.id,
                 ChatSession.status == SessionStatus.ACTIVE
@@ -534,9 +538,11 @@ def auto_match_giver(db: Session, cause: str | None = None, seeker_id: int | Non
 @app.post("/sessions/request", response_model=ChatSessionRead)
 def request_session(
     payload: SessionRequest,
-    user: User = Depends(require_role(Role.SEEKER)),
+    user: User = Depends(current_user),
     db: Session = Depends(get_session),
 ):
+    if user.role.value not in ("support_seeker",):
+        raise HTTPException(status_code=403, detail="Only Support Seekers can request a connection")
     giver = auto_match_giver(db, payload.cause, seeker_id=user.id)
     session = ChatSession(
         seeker_id=user.id,
@@ -557,6 +563,7 @@ def request_ai_session(
     user: User = Depends(current_user),
     db: Session = Depends(get_session),
 ):
+    # Any user can chat with AI
     session = ChatSession(
         seeker_id=user.id,
         giver_id=None,
@@ -595,16 +602,25 @@ def get_pending_sessions(
     user: User = Depends(current_user),
     db: Session = Depends(get_session),
 ):
-    query = select(ChatSession).where(ChatSession.status == SessionStatus.OPEN).order_by(ChatSession.created_at.desc())
+    # Givers see ALL open sessions to accept; seekers see their own open ones
+    if user.role.value == "support_giver":
+        query = select(ChatSession).where(ChatSession.status == SessionStatus.OPEN).order_by(ChatSession.created_at.desc())
+    else:
+        query = select(ChatSession).where(
+            ChatSession.status == SessionStatus.OPEN,
+            ChatSession.seeker_id == user.id
+        ).order_by(ChatSession.created_at.desc())
     return db.exec(query).all()
 
 
 @app.post("/sessions/{session_id}/accept", response_model=ChatSessionRead)
 def accept_session(
     session_id: int,
-    user: User = Depends(require_role(Role.GIVER)),
+    user: User = Depends(current_user),
     db: Session = Depends(get_session),
 ):
+    if user.role.value not in ("support_giver",):
+        raise HTTPException(status_code=403, detail="Only Support Givers can accept sessions")
     session = db.get(ChatSession, session_id)
     if not session or session.status != SessionStatus.OPEN:
         raise HTTPException(status_code=400, detail="Session not available")
