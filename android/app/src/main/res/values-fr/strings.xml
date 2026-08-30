@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">HearU</string>
+    <string name="tagline">Vous n\'êtes pas seul(e)</string>
+    <string name="login">Connexion</string>
+    <string name="register">Créer un compte</string>
+    <string name="email_hint">Adresse e-mail</string>
+    <string name="password_hint">Mot de passe</string>
+    <string name="display_name_hint">Nom d\'affichage</string>
+    <string name="send_message_hint">Tapez un message...</string>
+    <string name="send">Envoyer</string>
+    <string name="emergency_help">Aide d\'urgence</string>
+    <string name="connect">Se connecter</string>
+    <string name="disclaimer_banner">Ceci est un soutien entre pairs, pas une thérapie professionnelle. En crise ? Appelez le 988</string>
+    <string name="crisis_title">🚨 Nous nous soucions de vous</string>
+    <string name="crisis_message">Si vous êtes en crise, veuillez contacter une aide professionnelle immédiatement.\n\n📞 988 Ligne de crise et de prévention du suicide\n📱 Ligne de crise par texto : Envoyez BONJOUR au 741741\n\nVous n\'êtes pas seul(e).</string>
+    <string name="call_988">Appeler le 988</string>
+    <string name="continue_chat">Continuer la discussion</string>
+    <string name="friend_request_title">Envoyer une demande d\'ami ?</string>
+    <string name="friend_request_message">Votre identité sera révélée s\'ils acceptent. Continuer ?</string>
+    <string name="mood_prompt_before">Comment vous sentez-vous en ce moment ?</string>
+    <string name="mood_prompt_after">Comment vous sentez-vous maintenant ?</string>
+    <string name="otp_title">Vérifiez votre compte</string>
+    <string name="otp_subtitle">Nous avons envoyé un code de vérification à votre e-mail</string>
+    <string name="verify">Vérifier</string>
+    <string name="resend_code">Renvoyer le code</string>
+    <string name="settings">Paramètres</string>
+    <string name="dark_mode">Mode sombre</string>
+    <string name="notifications">Notifications</string>
+    <string name="delete_account">Supprimer le compte</string>
+    <string name="logout">Déconnexion</string>
+    <string name="premium_upgrade">Passer au Premium</string>
+    <string name="premium_description">Accédez à des écoutants vérifiés et à un jumelage prioritaire</string>
+    <string name="version_info">HearU v1.0.0</string>
+    <string name="appearance">Apparence</string>
+    <string name="choose_theme">Choisir le thème</string>
+    <string name="light_mode">☀️ Mode clair</string>
+    <string name="dark_mode_option">🌙 Mode sombre</string>
+    <string name="system_default">📱 Par défaut du système</string>
+    <string name="language">Langue</string>
+</resources>
