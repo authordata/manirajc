@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+android:layout_width="match_parent"
+android:layout_height="match_parent"
+android:orientation="vertical"
+android:padding="24dp"
+android:gravity="center">
+<TextView
+android:layout_width="wrap_content"
+android:layout_height="wrap_content"
+android:text="We sent a verification code to your email"
+android:textSize="16sp"
+android:textAlignment="center"
+android:layout_marginBottom="24dp"/>
+<EditText
+android:id="@+id/etOtpCode"
+android:layout_width="match_parent"
+android:layout_height="wrap_content"
+android:inputType="number"
+android:maxLength="6"
+android:hint="6-digit PIN"
+android:textAlignment="center"
+android:textSize="24sp"
+android:letterSpacing="0.5"
+android:layout_marginBottom="24dp"/>
+<Button
+android:id="@+id/btnVerify"
+android:layout_width="match_parent"
+android:layout_height="wrap_content"
+android:text="Verify"
+android:layout_marginBottom="16dp"/>
+<LinearLayout
+android:layout_width="wrap_content"
+android:layout_height="wrap_content"
+android:orientation="horizontal">
+<TextView
+android:id="@+id/btnResend"
+android:layout_width="wrap_content"
+android:layout_height="wrap_content"
+android:text="Resend Code"
+android:textColor="?attr/colorPrimary"
+android:textStyle="bold"
+android:padding="8dp"/>
+<TextView
+android:id="@+id/tvTimer"
+android:layout_width="wrap_content"
+android:layout_height="wrap_content"
+android:text="00:59"
+android:padding="8dp"/>
+</LinearLayout>
+</LinearLayout>

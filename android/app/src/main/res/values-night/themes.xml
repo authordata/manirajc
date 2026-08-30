@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.HearU" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="colorPrimary">@color/dark_primary</item>
-        <item name="colorPrimaryVariant">@color/purple_variant</item>
-        <item name="colorSecondary">@color/purple_secondary</item>
-        <item name="colorSurface">@color/dark_surface</item>
-        <item name="android:colorBackground">@color/dark_background</item>
-        <item name="colorError">@color/error</item>
-        <item name="colorOnPrimary">@color/dark_on_surface</item>
-        <item name="android:statusBarColor">@color/dark_status_bar</item>
-        <item name="android:navigationBarColor">@color/dark_background</item>
-    </style>
+<style name="Theme.HearU" parent="Theme.Material3.DayNight.NoActionBar">
+<item name="colorPrimary">@color/purple_primary</item>
+<item name="colorPrimaryVariant">@color/purple_variant</item>
+<item name="colorSecondary">@color/purple_secondary</item>
+<item name="colorSurface">#121212</item>
+<item name="android:colorBackground">#121212</item>
+<item name="colorError">#CF6679</item>
+<item name="colorOnPrimary">#000000</item>
+<item name="android:statusBarColor">#121212</item>
+<item name="android:navigationBarColor">#121212</item>
+</style>
 </resources>

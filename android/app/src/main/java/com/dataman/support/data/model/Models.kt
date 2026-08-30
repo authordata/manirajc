@@ -1,124 +1,92 @@
 package com.dataman.support.data.model
-
 import com.google.gson.annotations.SerializedName
-
-// --- User ---
 data class User(
-    val id: Int,
-    val email: String,
-    @SerializedName("display_name") val displayName: String,
-    val role: String,
-    @SerializedName("is_anonymous") val isAnonymous: Boolean
+val id: Int,
+val email: String,
+@SerializedName("display_name") val displayName: String,
+val role: String,
+@SerializedName("is_anonymous") val isAnonymous: Boolean
 )
-
-// --- Profiles (matching backend schema) ---
 data class SeekerProfileUpsert(
-    val gender: String? = null,
-    @SerializedName("age_range") val ageRange: String? = null,
-    @SerializedName("causes_csv") val causesCsv: String? = null,
-    val visibility: String? = null
+val gender: String? = null,
+@SerializedName("age_range") val ageRange: String? = null,
+@SerializedName("causes_csv") val causesCsv: String? = null,
+val visibility: String? = null
 )
-
 data class GiverProfileUpsert(
-    val about: String? = null,
-    val experience: String? = null,
-    @SerializedName("is_available") val isAvailable: Boolean = true
+val about: String? = null,
+val experience: String? = null,
+@SerializedName("is_available") val isAvailable: Boolean = true
 )
-
-// --- Chat Session ---
 data class ChatSession(
-    val id: Int,
-    @SerializedName("seeker_id") val seekerId: Int,
-    @SerializedName("giver_id") val giverId: Int?,
-    val status: String,
-    val cause: String? = null,
-    @SerializedName("is_ai_session") val isAiSession: Boolean = false,
-    @SerializedName("created_at") val createdAt: String? = null,
-    @SerializedName("ended_at") val endedAt: String? = null
+val id: Int,
+@SerializedName("seeker_id") val seekerId: Int,
+@SerializedName("giver_id") val giverId: Int?,
+val status: String,
+val cause: String? = null,
+@SerializedName("is_ai_session") val isAiSession: Boolean = false,
+@SerializedName("created_at") val createdAt: String? = null,
+@SerializedName("ended_at") val endedAt: String? = null
 )
-
-// --- Chat Message ---
 data class ChatMessage(
-    val id: Int,
-    @SerializedName("session_id") val sessionId: Int,
-    @SerializedName("sender_user_id") val senderUserId: Int? = null,
-    @SerializedName("sender_label") val senderLabel: String,
-    val content: String,
-    @SerializedName("created_at") val createdAt: String
+val id: Int,
+@SerializedName("session_id") val sessionId: Int,
+@SerializedName("sender_user_id") val senderUserId: Int? = null,
+@SerializedName("sender_label") val senderLabel: String,
+val content: String,
+@SerializedName("created_at") val createdAt: String
 )
-
-// --- Auth ---
 data class RegisterRequest(
-    val email: String,
-    val password: String,
-    @SerializedName("display_name") val displayName: String,
-    val role: String,
-    @SerializedName("is_anonymous") val isAnonymous: Boolean = true
+val email: String,
+val password: String,
+@SerializedName("display_name") val displayName: String,
+val role: String,
+@SerializedName("is_anonymous") val isAnonymous: Boolean = true
 )
-
 data class LoginRequest(
-    val email: String,
-    val password: String
+val email: String,
+val password: String
 )
-
 data class AuthResponse(
-    @SerializedName("access_token") val accessToken: String,
-    @SerializedName("token_type") val tokenType: String = "bearer"
+@SerializedName("access_token") val accessToken: String,
+@SerializedName("token_type") val tokenType: String = "bearer"
 )
-
-// --- Session ---
 data class SessionRequest(
-    val cause: String? = null
+val cause: String? = null
 )
-
 data class SessionResponse(
-    @SerializedName("session_id") val sessionId: Int,
-    val status: String,
-    @SerializedName("giver_assigned") val giverAssigned: Int? = null,
-    @SerializedName("is_ai_session") val isAiSession: Boolean = false
+@SerializedName("session_id") val sessionId: Int,
+val status: String,
+@SerializedName("giver_assigned") val giverAssigned: Int? = null,
+@SerializedName("is_ai_session") val isAiSession: Boolean = false
 )
-
-// --- Messages ---
 data class MessageRequest(
-    val content: String
+val content: String
 )
-
 data class SendMessageResponse(
-    val id: Int,
-    @SerializedName("created_at") val createdAt: String
+val id: Int,
+@SerializedName("created_at") val createdAt: String
 )
-
 data class AiMessageResponse(
-    @SerializedName("reply") val reply: String
+@SerializedName("reply") val reply: String
 )
-
-// --- Feedback ---
 data class FeedbackRequest(
-    val rating: Int,
-    val comment: String? = null
+val rating: Int,
+val comment: String? = null
 )
-
-// --- Reports ---
 data class ReportRequest(
-    @SerializedName("session_id") val sessionId: Int?,
-    val reason: String,
-    val details: String? = null
+@SerializedName("session_id") val sessionId: Int?,
+val reason: String,
+val details: String? = null
 )
-
-// --- Generic success response from backend ---
 data class SuccessResponse(
-    val success: Boolean = true
+val success: Boolean = true
 )
-
-// OTP
-data class SendOtpRequest(val otp_type: String) // 'email' or 'phone'
+data class SendOtpRequest(val otp_type: String) 
 data class VerifyOtpRequest(val otp_type: String, val code: String)
 data class OtpResponse(val message: String, val otp_type: String)
-
-// Friend Request  
 data class FriendRequestCreate(@SerializedName("receiver_id") val receiverId: String, @SerializedName("session_id") val sessionId: Int)
 data class FriendRequestResponse(val id: Int, @SerializedName("sender_id") val senderId: String, @SerializedName("receiver_id") val receiverId: String, val status: String)
-data class FriendRespondRequest(val action: String) // 'accept' or 'reject'
-
-// Crisis
+data class FriendRespondRequest(val action: String) 
 data class CrisisInfo(@SerializedName("crisis_detected") val crisisDetected: Boolean = false, @SerializedName("crisis_message") val crisisMessage: String? = null)
+data class MoodRating(val session_id: Int, val mood_before: Int, val mood_after: Int)
