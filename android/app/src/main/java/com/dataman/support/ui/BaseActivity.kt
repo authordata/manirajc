@@ -1,15 +1,20 @@
 package com.dataman.support.ui
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import com.google.android.material.bottomnavigation.BottomNavigationView
+import androidx.appcompat.app.AppCompatDelegate
 import com.dataman.support.R
+import com.google.android.material.bottomnavigation.BottomNavigationView
 
 open class BaseActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val savedMode = getSharedPreferences("hearu_prefs", Context.MODE_PRIVATE)
+            .getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+        AppCompatDelegate.setDefaultNightMode(savedMode)
     }
 
     protected fun setupBottomNavigation(navView: BottomNavigationView) {
@@ -40,7 +45,7 @@ open class BaseActivity : AppCompatActivity() {
         intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
         startActivity(intent)
     }
-    
+
     protected fun updateNavigationBarState(navView: BottomNavigationView, actionId: Int) {
         navView.menu.findItem(actionId)?.isChecked = true
     }

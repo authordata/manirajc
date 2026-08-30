@@ -32,4 +32,10 @@
     <string name="premium_upgrade">Upgrade to Premium</string>
     <string name="premium_description">Get access to verified listeners and priority matching</string>
     <string name="version_info">HearU v1.0.0</string>
+    <string name="appearance">Appearance</string>
+    <string name="choose_theme">Choose Theme</string>
+    <string name="light_mode">☀️ Light Mode</string>
+    <string name="dark_mode_option">🌙 Dark Mode</string>
+    <string name="system_default">📱 System Default</string>
+    <string name="language">Language</string>
 </resources>

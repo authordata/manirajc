@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">హియర్యూ</string>
+    <string name="tagline">మీరు ఒంటరి కాదు</string>
+    <string name="login">లాగిన్</string>
+    <string name="register">ఖాతా సృష్టించండి</string>
+    <string name="email_hint">ఇమెయిల్ చిరునామా</string>
+    <string name="password_hint">పాస్వర్డ్</string>
+    <string name="display_name_hint">ప్రదర్శన పేరు</string>
+    <string name="send_message_hint">సందేశాన్ని టైప్ చేయండి...</string>
+    <string name="send">పంపండి</string>
+    <string name="emergency_help">అత్యవసర సహాయం</string>
+    <string name="connect">కనెక్ట్</string>
+    <string name="disclaimer_banner">ఇది సహచర మద్దతు, వృత్తిపరమైన చికిత్స కాదు. సంక్షోభంలో ఉన్నారా? 988కు కాల్ చేయండి</string>
+    <string name="crisis_title">🚨 మేము మీ గురించి శ్రద్ధ వహిస్తాము</string>
+    <string name="crisis_message">మీరు సంక్షోభంలో ఉంటే, దయచేసి వెంటనే వృత్తిపరమైన సహాయాన్ని సంప్రదించండి.\n\n📞 988 సూసైడ్ &amp; క్రైసిస్ లైఫ్‌లైన్\n📱 క్రైసిస్ టెక్స్ట్ లైన్: 741741 కు HOME అని టెక్స్ట్ చేయండి\n\nమీరు ఒంటరి కాదు.</string>
+    <string name="call_988">988కు కాల్ చేయండి</string>
+    <string name="continue_chat">చాట్ కొనసాగించండి</string>
+    <string name="friend_request_title">స్నేహ అభ్యర్థన పంపాలా?</string>
+    <string name="friend_request_message">వారు అంగీకరిస్తే మీ గుర్తింపు వెల్లడవుతుంది. కొనసాగించాలా?</string>
+    <string name="mood_prompt_before">మీరు ఇప్పుడు ఎలా ఫీల్ అవుతున్నారు?</string>
+    <string name="mood_prompt_after">మీరు ఇప్పుడు ఎలా ఫీల్ అవుతున్నారు?</string>
+    <string name="otp_title">మీ ఖాతాను ధృవీకరించండి</string>
+    <string name="otp_subtitle">మేము మీ ఇమెయిల్‌కు ధృవీకరణ కోడ్‌ను పంపాము</string>
+    <string name="verify">ధృవీకరించు</string>
+    <string name="resend_code">కోడ్ మళ్ళీ పంపండి</string>
+    <string name="settings">సెట్టింగ్లు</string>
+    <string name="dark_mode">డార్క్ మోడ్</string>
+    <string name="notifications">నోటిఫికేషన్లు</string>
+    <string name="delete_account">ఖాతా తొలగించండి</string>
+    <string name="logout">లాగ్అవుట్</string>
+    <string name="premium_upgrade">ప్రీమియంకు అప్గ్రేడ్ చేయండి</string>
+    <string name="premium_description">ధృవీకరించబడిన శ్రోతలు మరియు ప్రాధాన్యత సరిపోలికకు ప్రాప్యతను పొందండి</string>
+    <string name="version_info">HearU v1.0.0</string>
+    <string name="appearance">రూపం</string>
+    <string name="choose_theme">థీమ్ ఎంచుకోండి</string>
+    <string name="light_mode">☀️ లైట్ మోడ్</string>
+    <string name="dark_mode_option">🌙 డార్క్ మోడ్</string>
+    <string name="system_default">📱 సిస్టమ్ డీఫాల్ట్</string>
+    <string name="language">భాష</string>
+</resources>
