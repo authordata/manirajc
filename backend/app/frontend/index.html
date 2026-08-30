@@ -813,10 +813,10 @@
                 sessions.forEach(s => {
                     const el = document.createElement('div');
                     el.className = 'session-card';
-                    el.onclick = () => openChat(s.id, s.is_ai ? 'AI Support' : 'Anonymous Listener');
+                    el.onclick = () => openChat(s.id, s.is_ai_session ? 'AI Support' : 'Anonymous Listener');
                     el.innerHTML = `
                         <span class="badge">${s.status}</span>
-                        <h4>${s.is_ai ? 'AI Session' : 'Human Session'}</h4>
+                        <h4>${s.is_ai_session ? 'AI Session' : 'Human Session'}</h4>
                         <p style="font-size: 0.9rem; color: #666;">${s.cause || 'No specific topic'}</p>
                     `;
                     container.appendChild(el);

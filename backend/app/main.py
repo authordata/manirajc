@@ -506,6 +506,7 @@ def auto_match_giver(db: Session, cause: str | None = None, seeker_id: int | Non
     if not candidates:
         return None
 
+    # whisper
     # Sort by score descending, pick top candidate
     candidates.sort(key=lambda x: x[0], reverse=True)
     
@@ -887,14 +888,18 @@ def generate_ai_reply(
         try:
             client = genai.Client(api_key=api_key)
             response = client.models.generate_content(
-                model="gemini-2.5-flash",
+                model="gemini-2.5-flash-preview-05-20",
                 contents=prompt,
             )
             ai_text = response.text
-        except Exception:
-            ai_text = "I'm here for you and I'm listening. Please tell me more about how you're feeling."
+        except Exception as e:
+            import traceback
+            print(f"[GEMINI ERROR] {type(e).__name__}: {e}")
+            traceback.print_exc()
+            ai_text = f"I hear you and I want to help. (AI temporarily unavailable: {type(e).__name__})"
     else:
-        ai_text = "I'm here for you and I'm listening. Please tell me more about how you're feeling."
+        print("[GEMINI] No GEMINI_API_KEY found in environment!")
+        ai_text = "I'm here for you. Please set GEMINI_API_KEY in environment for AI responses."
 
     ai_msg = ChatMessage(session_id=session_id, sender_user_id=None, sender_label="ai", content=ai_text)
     db.add(ai_msg)
