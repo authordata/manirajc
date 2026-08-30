@@ -623,11 +623,11 @@
                 }
                 
                 let data;
+                const resText = await res.text();
                 try {
-                    data = await res.json();
+                    data = JSON.parse(resText);
                 } catch (jsonErr) {
-                    const text = await res.text().catch(() => 'Server Error');
-                    if (!res.ok) throw new Error(text || `Server Error (${res.status})`);
+                    if (!res.ok) throw new Error(resText || `Server Error (${res.status})`);
                     return {};
                 }
                 if (!res.ok) {
@@ -789,7 +789,7 @@
                     openChat(session.id, type === 'ai' ? 'AI Support' : 'Support Giver');
                     loadSeekerActiveSessions();
                 } else {
-                    showToast('Waiting for a Support Giver to connect...', 'info');
+                    showToast('Request sent! We\'re finding the best Support Giver for you. You\'ll see it in Active Sessions below.', 'info');
                     loadSeekerActiveSessions();
                 }
             } catch (err) {
@@ -799,7 +799,9 @@
 
         async function loadSeekerActiveSessions() {
             try {
-                const sessions = await apiCall('/sessions/active');
+                const activeSessions = await apiCall('/sessions/active');
+                const pendingSessions = await apiCall('/sessions/pending').catch(() => []);
+                const sessions = [...activeSessions, ...(Array.isArray(pendingSessions) ? pendingSessions : [])];
                 const container = document.getElementById('seeker-active-sessions');
                 container.innerHTML = '';
                 
