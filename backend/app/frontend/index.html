@@ -622,7 +622,14 @@
                     throw new Error('Unauthorized');
                 }
                 
-                const data = await res.json();
+                let data;
+                try {
+                    data = await res.json();
+                } catch (jsonErr) {
+                    const text = await res.text().catch(() => 'Server Error');
+                    if (!res.ok) throw new Error(text || `Server Error (${res.status})`);
+                    return {};
+                }
                 if (!res.ok) {
                     let errMsg = 'API Error';
                     if (typeof data.detail === 'string') {
@@ -684,7 +691,7 @@
                             body: JSON.stringify({ email, password })
                         });
                         if (!jsonRes.ok) {
-                            const errData = await jsonRes.json().catch(() => ({}));
+                            const errData = await jsonRes.json().catch(() => ({ detail: 'Login failed' }));
                             let errMsg = 'Login failed';
                             if (typeof errData.detail === 'string') errMsg = errData.detail;
                             else if (Array.isArray(errData.detail)) errMsg = errData.detail.map(e => e.msg || '').join(', ');

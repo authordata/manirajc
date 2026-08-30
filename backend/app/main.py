@@ -179,8 +179,7 @@ def register(payload: RegisterRequest, db: Session = Depends(get_session)):
         raise HTTPException(status_code=400, detail="Email already registered")
     user = User(
         email=payload.email,
-        phone_number=payload.phone_number,
-        hashed_password=get_password_hash(payload.password),
+        password_hash=get_password_hash(payload.password),
         display_name=payload.display_name or (f"Anonymous-{random.randint(1000, 9999)}" if payload.is_anonymous else "User"),
         role=payload.role,
         is_anonymous=payload.is_anonymous,
@@ -195,16 +194,16 @@ def register(payload: RegisterRequest, db: Session = Depends(get_session)):
         db.add(GiverProfile(user_id=user.id))
     db.commit()
 
-    token = create_access_token(user.id, {"role": user.role.value, "is_anonymous": user.is_anonymous})
+    token = create_access_token(str(user.id))
     return TokenResponse(access_token=token)
 
 
 @app.post("/auth/login", response_model=TokenResponse)
 def login(payload: LoginRequest, db: Session = Depends(get_session)):
     user = db.exec(select(User).where(User.email == payload.email)).first()
-    if not user or not verify_password(payload.password, user.hashed_password):
+    if not user or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=400, detail="Invalid credentials")
-    token = create_access_token(user.id, {"role": user.role.value, "is_anonymous": user.is_anonymous})
+    token = create_access_token(str(user.id))
     return TokenResponse(access_token=token)
 
 
@@ -213,7 +212,7 @@ def create_anonymous_user(db: Session = Depends(get_session)):
     anon_id = random.randint(10000, 99999)
     user = User(
         email=f"anon_{anon_id}@hearu.local",
-        hashed_password=get_password_hash("anonymous"),
+        password_hash=get_password_hash("anonymous"),
         display_name=f"Anonymous-{anon_id}",
         role=Role.SEEKER,
         is_anonymous=True,
@@ -224,20 +223,22 @@ def create_anonymous_user(db: Session = Depends(get_session)):
     db.refresh(user)
     db.add(SeekerProfile(user_id=user.id))
     db.commit()
-    token = create_access_token(user.id, {"role": user.role.value, "is_anonymous": True})
+    token = create_access_token(str(user.id))
     return TokenResponse(access_token=token)
 
 
-@app.post("/auth/otp/send")
-def send_otp(payload: OtpRequest, db: Session = Depends(get_session)):
-    if not payload.email and not payload.phone_number:
-        raise HTTPException(status_code=400, detail="Provide email or phone number")
+@app.post("/auth/send-otp")
+def send_otp(
+    payload: OtpRequest,
+    user: User = Depends(current_user),
+    db: Session = Depends(get_session),
+):
     code = f"{random.randint(100000, 999999)}"
     expires_at = datetime.utcnow() + timedelta(minutes=10)
     otp = OtpCode(
-        email=payload.email,
-        phone_number=payload.phone_number,
+        user_id=user.id,
         code=code,
+        otp_type=payload.otp_type,
         expires_at=expires_at,
     )
     db.add(otp)
@@ -246,28 +247,26 @@ def send_otp(payload: OtpRequest, db: Session = Depends(get_session)):
     return {"status": "sent", "code": code}
 
 
-@app.post("/auth/otp/verify")
+@app.post("/auth/verify-otp")
 def verify_otp(
     payload: OtpVerify,
     user: User = Depends(current_user),
     db: Session = Depends(get_session),
 ):
     query = select(OtpCode).where(
+        OtpCode.user_id == user.id,
         OtpCode.code == payload.code,
+        OtpCode.otp_type == payload.otp_type,
         OtpCode.is_used == False,
         OtpCode.expires_at >= datetime.utcnow(),
     )
-    if payload.email:
-        query = query.where(OtpCode.email == payload.email)
-    if payload.phone_number:
-        query = query.where(OtpCode.phone_number == payload.phone_number)
     otp = db.exec(query).first()
     if not otp:
         raise HTTPException(status_code=400, detail="Invalid or expired OTP")
     otp.is_used = True
-    if payload.email:
+    if payload.otp_type == "email":
         user.is_email_verified = True
-    if payload.phone_number:
+    elif payload.otp_type == "phone":
         user.is_phone_verified = True
     db.add(otp)
     db.add(user)
