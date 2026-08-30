@@ -104,9 +104,8 @@ def require_role(role: Role):
 
 
 def require_admin(user: User = Depends(current_user)) -> User:
-    if not user.is_admin:
-        raise HTTPException(status_code=403, detail="Admin required")
-    return user
+    # Admin check - currently no admin role, placeholder
+    raise HTTPException(status_code=403, detail="Admin required")
 
 
 def require_verified(user: User = Depends(current_user)) -> User:
@@ -377,12 +376,13 @@ def update_giver_profile(
 
 @app.get("/givers/available", response_model=List[UserRead])
 def list_available_givers(db: Session = Depends(get_session)):
-    query = (
-        select(User)
-        .join(GiverProfile)
-        .where(User.role == Role.GIVER, GiverProfile.is_available == True)
-    )
-    return db.exec(query).all()
+    profiles = db.exec(select(GiverProfile).where(GiverProfile.is_available == True)).all()
+    givers = []
+    for p in profiles:
+        user = db.get(User, p.user_id)
+        if user:
+            givers.append({"id": user.id, "display_name": user.display_name, "about": p.about})
+    return givers
 
 
 @app.post("/givers/toggle-availability")
@@ -438,19 +438,20 @@ def verify_giver(
 
 
 def auto_match_giver(db: Session, cause: str | None = None) -> User | None:
-    query = (
-        select(User)
-        .join(GiverProfile)
-        .where(User.role == Role.GIVER, GiverProfile.is_available == True)
-    )
-    givers = db.exec(query).all()
+    # Find available givers
+    available_profiles = db.exec(
+        select(GiverProfile).where(GiverProfile.is_available == True)
+    ).all()
+    if not available_profiles:
+        return None
+    # Get user objects for available givers
+    givers = []
+    for profile in available_profiles:
+        user = db.get(User, profile.user_id)
+        if user and user.role in (Role.GIVER, Role.SUPPORT_GIVER):
+            givers.append(user)
     if not givers:
         return None
-    if cause:
-        for giver in givers:
-            profile = db.exec(select(GiverProfile).where(GiverProfile.user_id == giver.id)).first()
-            if profile and profile.topics and cause.lower() in profile.topics.lower():
-                return giver
     return random.choice(givers)
 
 

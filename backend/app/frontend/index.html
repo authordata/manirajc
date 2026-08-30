@@ -673,7 +673,7 @@
                 
                 if (authMode === 'login') {
                     // Try OAuth2 form data first if standard FastAPI
-                    const formData = new URLSearchParams();
+                    const formData = new seasonalParams = new URLSearchParams();
                     formData.append('username', email); // OAuth2 expects username
                     formData.append('password', password);
                     
