@@ -418,8 +418,8 @@
                         <div class="form-group">
                             <label>Role</label>
                             <select id="role">
-                                <option value="support_seeker">Seeker</option>
-                                <option value="support_giver">Giver</option>
+                                <option value="support_seeker">Support Seeker</option>
+                                <option value="support_giver">Support Giver</option>
                             </select>
                         </div>
                     </div>
@@ -431,7 +431,7 @@
 
         <!-- Seeker Dashboard View -->
         <div id="seeker-dashboard" class="view">
-            <h2>Seeker Dashboard</h2>
+            <h2>Support Seeker Dashboard</h2>
             <p style="margin-bottom: 2rem;">How are you feeling today?</p>
             
             <div class="dashboard-grid">
@@ -463,7 +463,7 @@
         <!-- Giver Dashboard View -->
         <div id="giver-dashboard" class="view">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-                <h2>Giver Dashboard</h2>
+                <h2>Support Giver Dashboard</h2>
                 <div>
                     <label style="margin-right: 0.5rem;">Available to listen:</label>
                     <button class="btn" id="availability-btn" onclick="toggleAvailability()">Set Available</button>
@@ -773,7 +773,7 @@
             }
         }
 
-        // Seeker Functions
+        // Support Seeker Functions
         async function startSession(type) {
             const causeInputId = type === 'ai' ? 'ai-cause' : 'human-cause';
             const cause = document.getElementById(causeInputId).value;
@@ -827,7 +827,7 @@
             }
         }
 
-        // Giver Functions
+        // Support Giver Functions
         async function loadGiverDashboard() {
             try {
                 // Get availability status (mock check if no endpoint exists, handle gracefully)
@@ -849,7 +849,7 @@
                     el.className = 'session-card';
                     el.innerHTML = `
                         <span class="badge" style="background-color: var(--secondary)">Pending</span>
-                        <h4>Anonymous Seeker</h4>
+                        <h4>Anonymous Support Seeker</h4>
                         <p style="font-size: 0.9rem; margin: 0.5rem 0;">${r.cause || 'Needs someone to talk to'}</p>
                         <button class="btn" onclick="acceptRequest('${r.id}')" style="margin-top: auto;">Accept Request</button>
                     `;
@@ -864,10 +864,10 @@
                 active.forEach(s => {
                     const el = document.createElement('div');
                     el.className = 'session-card';
-                    el.onclick = () => openChat(s.id, 'Anonymous Seeker');
+                    el.onclick = () => openChat(s.id, 'Anonymous Support Seeker');
                     el.innerHTML = `
                         <span class="badge">Active</span>
-                        <h4>Anonymous Seeker</h4>
+                        <h4>Anonymous Support Seeker</h4>
                         <p style="font-size: 0.9rem;">${s.cause || 'Started conversation'}</p>
                     `;
                     activeCont.appendChild(el);
@@ -898,7 +898,7 @@
             try {
                 await apiCall(`/sessions/${id}/accept`, 'POST');
                 showToast('Request accepted!', 'success');
-                openChat(id, 'Anonymous Seeker');
+                openChat(id, 'Anonymous Support Seeker');
             } catch (err) {
                 showToast(err.message, 'error');
             }
