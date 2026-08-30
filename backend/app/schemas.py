@@ -92,3 +92,8 @@ class FriendRequestCreate(BaseModel):
 
 class FriendRequestRespond(BaseModel):
     status: str
+
+
+class MoodCreate(BaseModel):
+    mood_before: int
+    mood_after: Optional[int] = None

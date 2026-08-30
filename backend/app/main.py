@@ -1,10 +1,13 @@
+import os
 import random
 from datetime import datetime, timedelta
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from sqlmodel import Session, select
+from sqlmodel import Session, select, func
+
+import google.generativeai as genai
 
 from .database import create_db_and_tables, get_session
 from .models import (
@@ -19,6 +22,7 @@ from .models import (
     SeekerProfile,
     SessionStatus,
     User,
+    MoodRating,
 )
 from .schemas import (
     AuthResponse,
@@ -34,6 +38,7 @@ from .schemas import (
     SendOtpRequest,
     SessionRequest,
     VerifyOtpRequest,
+    MoodCreate,
 )
 from .security import create_access_token, decode_access_token, hash_password, verify_password
 
@@ -45,6 +50,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
 
 CRISIS_KEYWORDS = ['suicide', 'kill myself', 'end my life', 'self-harm', 'want to die', 'hurt myself']
 
@@ -357,7 +366,46 @@ def ai_message(
             "I hear you. Thank you for sharing this. "
             "Would you like grounding tips, reflective questions, or to continue venting?"
         )
-    
+        
+        if GEMINI_API_KEY:
+            try:
+                # Get last 10 messages before the current one to build history
+                past_messages = db.exec(
+                    select(ChatMessage)
+                    .where(ChatMessage.session_id == session_id)
+                    .order_by(ChatMessage.created_at.desc())
+                    .limit(10)
+                ).all()
+                
+                past_messages.reverse()
+                
+                history = []
+                for msg in past_messages:
+                    role = "user" if msg.sender_label == "seeker" else "model"
+                    # skip system messages if any, or map them to model
+                    if msg.sender_label == "system":
+                        continue
+                    history.append({"role": role, "parts": [msg.content]})
+                    
+                sys_instruct = (
+                    "You are HearU, a compassionate AI emotional support companion. "
+                    "You listen with empathy, validate feelings, and offer gentle coping strategies. "
+                    "You are NOT a therapist. Always remind users to seek professional help for serious issues. "
+                    "Keep responses warm, concise (2-3 sentences), and supportive. "
+                    "Never diagnose conditions or prescribe medication."
+                )
+                
+                model = genai.GenerativeModel(
+                    model_name="gemini-2.0-flash",
+                    system_instruction=sys_instruct
+                )
+                
+                chat = model.start_chat(history=history)
+                response = chat.send_message(payload.content)
+                reply = response.text
+            except Exception as e:
+                print(f"Gemini API error: {e}")
+
     ai_response = ChatMessage(
         session_id=session_id,
         sender_user_id=None,
@@ -368,6 +416,109 @@ def ai_message(
     db.commit()
 
     return {"reply": reply, "crisis_detected": crisis_detected}
+
+
+@app.post("/sessions/{session_id}/mood")
+def add_mood(
+    session_id: int,
+    payload: MoodCreate,
+    user: User = Depends(current_user),
+    db: Session = Depends(get_session),
+):
+    chat_session = db.get(ChatSession, session_id)
+    if not chat_session:
+        raise HTTPException(status_code=404, detail="Session not found")
+        
+    if payload.mood_before < 1 or payload.mood_before > 5:
+        raise HTTPException(status_code=400, detail="Mood rating must be 1-5")
+    if payload.mood_after is not None and (payload.mood_after < 1 or payload.mood_after > 5):
+        raise HTTPException(status_code=400, detail="Mood rating must be 1-5")
+
+    mood = db.exec(
+        select(MoodRating)
+        .where(MoodRating.session_id == session_id)
+        .where(MoodRating.user_id == user.id)
+    ).first()
+    
+    if mood:
+        mood.mood_before = payload.mood_before
+        mood.mood_after = payload.mood_after
+    else:
+        mood = MoodRating(
+            session_id=session_id,
+            user_id=user.id,
+            mood_before=payload.mood_before,
+            mood_after=payload.mood_after
+        )
+    db.add(mood)
+    db.commit()
+    db.refresh(mood)
+    return mood
+
+
+@app.get("/sessions/{session_id}/mood")
+def get_mood(
+    session_id: int,
+    user: User = Depends(current_user),
+    db: Session = Depends(get_session),
+):
+    moods = db.exec(
+        select(MoodRating)
+        .where(MoodRating.session_id == session_id)
+    ).all()
+    return moods
+
+
+@app.get("/analytics/sessions")
+def get_sessions_analytics(db: Session = Depends(get_session)):
+    total_sessions = db.exec(select(func.count(ChatSession.id))).one()
+    avg_rating = db.exec(select(func.avg(Feedback.rating))).one() or 0.0
+    
+    moods = db.exec(
+        select(MoodRating)
+        .where(MoodRating.mood_after != None)
+    ).all()
+    
+    mood_improvement = 0.0
+    if moods:
+        total_diff = sum(m.mood_after - m.mood_before for m in moods if m.mood_after is not None)
+        mood_improvement = total_diff / len(moods)
+        
+    return {
+        "total_sessions": total_sessions,
+        "avg_rating": float(avg_rating),
+        "avg_mood_improvement": float(mood_improvement)
+    }
+
+@app.get("/analytics/givers/leaderboard")
+def get_givers_leaderboard(db: Session = Depends(get_session)):
+    sessions = db.exec(select(ChatSession).where(ChatSession.giver_id != None)).all()
+    feedbacks = db.exec(select(Feedback)).all()
+    
+    giver_stats = {}
+    for s in sessions:
+        if s.giver_id not in giver_stats:
+            giver_stats[s.giver_id] = {"session_count": 0, "ratings": []}
+        giver_stats[s.giver_id]["session_count"] += 1
+        
+    for f in feedbacks:
+        s = db.get(ChatSession, f.session_id)
+        if s and s.giver_id:
+            if s.giver_id not in giver_stats:
+                giver_stats[s.giver_id] = {"session_count": 0, "ratings": []}
+            giver_stats[s.giver_id]["ratings"].append(f.rating)
+            
+    leaderboard = []
+    for g_id, stats in giver_stats.items():
+        avg_rating = sum(stats["ratings"]) / len(stats["ratings"]) if stats["ratings"] else 0.0
+        leaderboard.append({
+            "giver_id": g_id,
+            "session_count": stats["session_count"],
+            "avg_rating": avg_rating
+        })
+        
+    leaderboard.sort(key=lambda x: (x["avg_rating"], x["session_count"]), reverse=True)
+    return leaderboard
 
 
 @app.get("/sessions/{session_id}/messages")
