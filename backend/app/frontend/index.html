@@ -926,7 +926,7 @@
             
             container.innerHTML = '';
             messages.forEach(m => {
-                const isSentByMe = m.sender_id === currentUser.id;
+                const isSentByMe = m.sender_user_id === currentUser.id;
                 const el = document.createElement('div');
                 el.className = `message ${isSentByMe ? 'sent' : 'received'}`;
                 el.innerText = m.content;
@@ -953,21 +953,13 @@
             input.value = '';
             
             try {
-                // Optimistic UI update
-                const container = document.getElementById('chat-messages');
-                const el = document.createElement('div');
-                el.className = 'message sent';
-                el.innerText = content;
-                container.appendChild(el);
-                container.scrollTop = container.scrollHeight;
-
                 await apiCall(`/sessions/${currentSessionId}/messages`, 'POST', { content });
                 
                 // If it's an AI session, we might need to trigger the AI response manually depending on backend impl.
                 // Assuming backend auto-replies or provides a specific endpoint:
                 try {
                     const sessionInfo = await apiCall('/sessions/active');
-                    const isAi = sessionInfo.find(s => s.id === currentSessionId)?.is_ai;
+                    const isAi = sessionInfo.find(s => s.id === currentSessionId)?.is_ai_session;
                     if (isAi) {
                         await apiCall(`/sessions/${currentSessionId}/ai-message`, 'POST', { content });
                     }
@@ -990,15 +982,12 @@
             try {
                 await apiCall(`/sessions/${currentSessionId}/end`, 'POST');
                 showToast('Session ended', 'info');
-                document.getElementById('mood-overlay').classList.add('active');
-                window.continueSessionCreate = () => {
-                    closeMoodOverlay();
-                    showDashboard();
-                };
             } catch (err) {
                 showToast('Could not end session', 'error');
-                showDashboard();
             }
+            currentSessionId = null;
+            clearInterval(chatInterval);
+            showDashboard();
         }
 
         // Mood and Crisis Handlers
