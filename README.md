@@ -1,62 +1,56 @@
-# HearU - Emotional Support Platform App
+# HearU
 
-This is a runnable starter app for HearU, an emotional support platform connecting:
+HearU is a secure, anonymous peer-to-peer emotional support platform designed to connect individuals seeking a safe space to share their feelings and receive support.
 
-- Support seekers (with anonymity options)
-- Support givers (volunteer profiles + availability)
-- AI support chatbot sessions
+![HearU Screenshots](docs/screenshots_placeholder.png)
 
-## Project structure
+## Features
+- **Anonymous Connection:** Users remain anonymous until a friend request is sent and accepted.
+- **Dual Verification:** Secure authentication via Mobile OTP and Email OTP.
+- **AI Support Integration:** Conversational support powered by Gemini AI.
+- **Crisis Detection:** Proactive detection of critical mental health distress signals.
+- **Friend Requests:** Opt-in system for transitioning from anonymous peer to connected friend.
 
-- `backend/` FastAPI backend and data models
-- `frontend/` Web app (HTML/CSS/JS)
-- `android/` Native Kotlin starter with API contracts
-- `docs/` Product specification and database schema
+## Tech Stack
+- **Frontend:** Android / Kotlin
+- **Backend:** FastAPI (Python)
+- **AI Integration:** Google Gemini AI
 
-## Quick start (trial run)
+## Architecture
 
-### 1) Start backend
-
-```bash
-cd backend
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --host 0.0.0.0 --port 8000
+```mermaid
+graph TD;
+    Client[Android App] -->|HTTPS / REST| API[FastAPI Backend]
+    API --> DB[(PostgreSQL)]
+    API --> Auth[OTP Service / Twilio]
+    API --> AI[Gemini AI API]
 ```
 
-### 2) Start frontend app
+## Setup Instructions
 
-```bash
-python -m http.server 5173 --directory frontend
-```
+### Backend (FastAPI)
+1. Navigate to the `backend` directory.
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. Run the server:
+   ```bash
+   uvicorn app.main:app --reload
+   ```
+   *Alternatively, use Docker:*
+   ```bash
+   docker build -t hearu-backend .
+   docker run -p 8000:8000 hearu-backend
+   ```
 
-Open: `http://localhost:5173`
+### Android
+1. Open the `android` folder in Android Studio.
+2. Sync Gradle files.
+3. Build and run the app on an emulator or physical device.
 
+## Contributing
+We welcome contributions! Please review the open issues and submit pull requests. Ensure your code follows our style guidelines and passes all CI checks.
 
-### Frontend pages
-
-- `index.html` — Home + auth + dashboard
-- `chat.html` — Dedicated chat experience
-- `settings.html` — Privacy, notifications, safety actions
-- `profile.html` — Profile and session history
-
-### 3) Run automated backend tests
-
-```bash
-cd backend
-source .venv/bin/activate
-pytest -q
-```
-
-
-### Android app screens (native starter)
-
-- Onboarding
-- Auth (login/sign-up)
-- Chat
-- Settings
-- Profile
-
-See `android/README.md` for Play Store steps and Android Studio import instructions.
-Open `android/` directly in Android Studio.
+## License
+This project is licensed under the MIT License - see the LICENSE file for details.
